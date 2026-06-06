@@ -1,0 +1,45 @@
+{
+  "name": "cguard-superadmin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CGuard Pro — Platform SuperAdmin panel (tenant, billing & platform management).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint --fix \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@heroui/react": "2.8.4",
+    "@heroui/theme": "2.4.23",
+    "@hookform/resolvers": "^5.2.2",
+    "axios": "^1.12.2",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "11.18.2",
+    "lucide-react": "^0.545.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.65.0",
+    "react-router-dom": "6.23.0",
+    "recharts": "^2.15.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.11",
+    "@tailwindcss/vite": "4.1.11",
+    "@types/node": "20.5.7",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "4.7.0",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.1.11",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "5.6.3",
+    "vite": "6.0.11",
+    "vite-tsconfig-paths": "5.1.4"
+  }
+}

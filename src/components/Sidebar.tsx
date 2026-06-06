@@ -1,0 +1,61 @@
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Building2,
+  CreditCard,
+  Users,
+  Activity,
+  ScrollText,
+  ShieldCheck,
+} from "lucide-react";
+
+const NAV = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/tenants", label: "Tenants", icon: Building2 },
+  { to: "/billing", label: "Billing", icon: CreditCard },
+  { to: "/users", label: "Users", icon: Users },
+  { to: "/observability", label: "Observability", icon: Activity },
+  { to: "/audit", label: "Audit log", icon: ScrollText },
+];
+
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <div className="flex h-full w-64 flex-col border-r border-divider bg-content1">
+      <div className="flex items-center gap-2 px-5 py-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <ShieldCheck className="h-5 w-5" />
+        </div>
+        <div className="leading-tight">
+          <p className="text-sm font-semibold text-foreground">CGuard Pro</p>
+          <p className="text-xs text-default-500">SuperAdmin</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3 py-2">
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              [
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-default-600 hover:bg-default-100 hover:text-foreground",
+              ].join(" ")
+            }
+          >
+            <Icon className="h-4.5 w-4.5 shrink-0" style={{ width: 18, height: 18 }} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="px-5 py-4 text-[11px] text-default-400">
+        Platform administration · restricted access
+      </div>
+    </div>
+  );
+}
