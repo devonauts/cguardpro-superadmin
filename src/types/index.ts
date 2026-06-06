@@ -177,6 +177,30 @@ export interface UserRow {
   createdAt: string;
 }
 
+export interface CompanyMembership {
+  tenantId: string;
+  tenantName: string;
+  roles: string[];
+  status: string;
+  billingStatus: string;
+  billPaid: boolean;
+  suspended: boolean;
+}
+
+export interface PlatformUserRow {
+  id: string;
+  email: string;
+  fullName: string;
+  isSuperadmin: boolean;
+  emailVerified: boolean;
+  createdAt: string;
+  companies: CompanyMembership[];
+  companyCount: number;
+  primaryCompany: string | null;
+  billingStatus: string | null;
+  billPaid: boolean | null; // true=a company is paid(active), false=has company but none paid, null=no company
+}
+
 export interface GuardRow {
   id: string;
   fullName: string;
@@ -217,4 +241,25 @@ export interface AuditEntry {
   statusCode: number | null;
   details: any;
   createdAt: string;
+}
+
+// ── Settings · Stripe ────────────────────────────────────────────────────────
+/** Per-mode (test/live) Stripe config as returned by the API. Secrets are
+ *  write-only: only configured flags + the secret-key last4 are exposed. */
+export interface StripeModeConfig {
+  publishableKey: string;
+  secretKeyConfigured: boolean;
+  secretKeyLast4: string | null;
+  webhookSecretConfigured: boolean;
+  priceGrowth: string | null;
+  priceEnterprise: string | null;
+}
+
+export interface StripeSettings {
+  mode: "test" | "live";
+  /** Where the ACTIVE config currently resolves from. */
+  source: "db" | "env";
+  updatedAt: string | null;
+  test: StripeModeConfig;
+  live: StripeModeConfig;
 }

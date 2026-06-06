@@ -21,7 +21,7 @@ import {
   Button,
   useDisclosure,
 } from "@heroui/react";
-import { Search, Shield, Users as UsersIcon } from "lucide-react";
+import { Globe, Search, Shield, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -30,6 +30,7 @@ import { usersService } from "@/services/users";
 import { fmtDate, statusColor } from "@/lib/format";
 import type { Paginated, UserRow, GuardRow } from "@/types";
 import { RowActions } from "./components/RowActions";
+import { AllUsersTab } from "./components/AllUsersTab";
 
 const PAGE_LIMIT = 25;
 
@@ -401,14 +402,25 @@ function GuardsTab() {
 export default function UsersPage() {
   return (
     <div>
-      <PageHeader title="Users" subtitle="All staff & guards across tenants" />
+      <PageHeader title="Users" subtitle="Every platform user, tenant members & guards" />
       <Tabs aria-label="Users tabs" variant="underlined" color="primary">
         <Tab
-          key="staff"
+          key="all"
+          title={
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              <span>All users</span>
+            </div>
+          }
+        >
+          <AllUsersTab />
+        </Tab>
+        <Tab
+          key="members"
           title={
             <div className="flex items-center gap-2">
               <UsersIcon className="h-4 w-4" />
-              <span>Staff</span>
+              <span>Tenant members</span>
             </div>
           }
         >

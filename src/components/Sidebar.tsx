@@ -7,6 +7,7 @@ import {
   Activity,
   ScrollText,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 
 const NAV = [
@@ -16,6 +17,7 @@ const NAV = [
   { to: "/users", label: "Users", icon: Users },
   { to: "/observability", label: "Observability", icon: Activity },
   { to: "/audit", label: "Audit log", icon: ScrollText },
+  { to: "/settings/stripe", label: "Stripe", icon: Wallet },
 ];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
