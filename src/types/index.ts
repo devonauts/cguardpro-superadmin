@@ -243,6 +243,53 @@ export interface AuditEntry {
   createdAt: string;
 }
 
+// ── Training · platform addon courses & grants ────────────────────────────────
+export type TrainingCategory =
+  | "security"
+  | "compliance"
+  | "skills"
+  | "safety"
+  | "other";
+
+export type TrainingLevel = "beginner" | "intermediate" | "advanced";
+
+export type GrantStatus = "active" | "expired" | "revoked";
+
+/** A platform addon course (trainingCourse with isAddon=true, tenantId=null). */
+export interface AddonCourse {
+  id: string;
+  title: string;
+  description: string | null;
+  coverUrl: string | null;
+  category: TrainingCategory | null;
+  level: TrainingLevel | null;
+  pointsValue: number;
+  passingScore: number;
+  addonPrice: number | null;
+  certificateTemplate: string | null;
+  isAddon: boolean;
+  published: boolean;
+  tenantId: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** A grant linking an addon course to a tenant. The grants list endpoint
+ *  returns a flattened row (course title + tenant name joined server-side). */
+export interface AddonCourseGrant {
+  id: string;
+  addonCourseId: string;
+  courseTitle: string | null;
+  tenantId: string;
+  tenantName: string | null;
+  currentEnrollments: number;
+  seatCount: number | null;
+  status: GrantStatus | string;
+  expiresAt: string | null;
+  pricePaid: number | null;
+  grantedAt?: string;
+}
+
 // ── Settings · Stripe ────────────────────────────────────────────────────────
 /** Per-mode (test/live) Stripe config as returned by the API. Secrets are
  *  write-only: only configured flags + the secret-key last4 are exposed. */

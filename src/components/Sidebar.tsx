@@ -8,6 +8,8 @@ import {
   ScrollText,
   ShieldCheck,
   Wallet,
+  GraduationCap,
+  Gift,
 } from "lucide-react";
 
 const NAV = [
@@ -15,6 +17,8 @@ const NAV = [
   { to: "/tenants", label: "Tenants", icon: Building2 },
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/users", label: "Users", icon: Users },
+  { to: "/training/courses", label: "Addon courses", icon: GraduationCap },
+  { to: "/training/grants", label: "Course grants", icon: Gift },
   { to: "/observability", label: "Observability", icon: Activity },
   { to: "/audit", label: "Audit log", icon: ScrollText },
   { to: "/settings/stripe", label: "Stripe", icon: Wallet },

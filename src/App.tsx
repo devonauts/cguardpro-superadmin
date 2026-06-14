@@ -12,6 +12,8 @@ import UsersPage from "./pages/users/UsersPage";
 import ObservabilityPage from "./pages/observability/ObservabilityPage";
 import AuditLogPage from "./pages/audit/AuditLogPage";
 import StripeSettingsPage from "./pages/settings/StripeSettingsPage";
+import AddonCoursesPage from "./pages/training/AddonCoursesPage";
+import GrantsPage from "./pages/training/GrantsPage";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -39,6 +41,8 @@ export default function App() {
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/tenants/:id" element={<TenantBillingDetail />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="training/courses" element={<AddonCoursesPage />} />
+        <Route path="training/grants" element={<GrantsPage />} />
         <Route path="observability" element={<ObservabilityPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings/stripe" element={<StripeSettingsPage />} />
