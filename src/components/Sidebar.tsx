@@ -10,6 +10,8 @@ import {
   Wallet,
   GraduationCap,
   Gift,
+  Phone,
+  PhoneCall,
 } from "lucide-react";
 
 const NAV = [
@@ -17,11 +19,13 @@ const NAV = [
   { to: "/tenants", label: "Tenants", icon: Building2 },
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/users", label: "Users", icon: Users },
+  { to: "/phone", label: "Teléfono", icon: PhoneCall },
   { to: "/training/courses", label: "Addon courses", icon: GraduationCap },
   { to: "/training/grants", label: "Course grants", icon: Gift },
   { to: "/observability", label: "Observability", icon: Activity },
   { to: "/audit", label: "Audit log", icon: ScrollText },
   { to: "/settings/stripe", label: "Stripe", icon: Wallet },
+  { to: "/settings/twilio", label: "Twilio", icon: Phone },
 ];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
