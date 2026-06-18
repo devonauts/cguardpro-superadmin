@@ -22,6 +22,7 @@ import {
   Info,
   Webhook,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -104,6 +105,15 @@ export default function TwilioSettingsPage() {
   const [configuringSid, setConfiguringSid] = useState<string | null>(null);
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  const copyUrl = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("URL copiada");
+    } catch {
+      toast.error("No se pudo copiar");
+    }
+  }, []);
 
   const hydrate = useCallback((s: TwilioSettingsMasked) => {
     setSettings(s);
@@ -377,6 +387,58 @@ export default function TwilioSettingsPage() {
                 </Button>
               </CardFooter>
             </Card>
+
+            {/* Webhook URLs — register these in Twilio */}
+            {settings?.webhooks && (
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-col items-start gap-0.5">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Webhook className="h-4 w-4" /> Webhook URLs
+                  </span>
+                  <span className="text-xs text-default-500">
+                    Register these in Twilio. The phone-number webhooks (SMS &amp; Voice) can be
+                    set automatically below with “Configurar webhooks”; the TwiML App Voice URL
+                    must be set by hand on your TwiML App.
+                  </span>
+                </CardHeader>
+                <CardBody className="flex flex-col gap-2">
+                  {[
+                    { label: "SMS inbound", hint: "Phone number → Messaging → A message comes in", url: settings.webhooks.smsUrl },
+                    { label: "SMS status", hint: "Status callback for outbound SMS", url: settings.webhooks.smsStatusUrl },
+                    { label: "Voice inbound", hint: "Phone number → Voice → A call comes in", url: settings.webhooks.voiceUrl },
+                    { label: "Voice status", hint: "Call status callback", url: settings.webhooks.voiceStatusUrl },
+                    { label: "TwiML App Voice URL", hint: "Set manually on your TwiML App (browser-originated calls)", url: settings.webhooks.voiceOutboundUrl, highlight: true },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+                        row.highlight ? "border-warning-200 bg-warning-50/40" : "border-default-200"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">{row.label}</span>
+                          {row.highlight && (
+                            <Chip size="sm" variant="flat" color="warning">manual</Chip>
+                          )}
+                        </div>
+                        <code className="block truncate text-xs text-default-500">{row.url}</code>
+                        <span className="text-[11px] text-default-400">{row.hint}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        isIconOnly
+                        aria-label={`Copy ${row.label} URL`}
+                        onPress={() => copyUrl(row.url)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardBody>
+              </Card>
+            )}
 
             {/* Numbers */}
             <Card className="shadow-sm">

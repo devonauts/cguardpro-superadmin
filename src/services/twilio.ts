@@ -22,6 +22,16 @@ export interface TwilioSettingsMasked {
   /** 'db' = using saved keys, 'env' = falling back to env vars. */
   source: "db" | "env";
   updatedAt: string | null;
+  /** Public webhook URLs to register in Twilio (no secrets). */
+  webhooks?: TwilioWebhookUrls;
+}
+
+export interface TwilioWebhookUrls {
+  smsUrl: string;
+  smsStatusUrl: string;
+  voiceUrl: string;
+  voiceStatusUrl: string;
+  voiceOutboundUrl: string;
 }
 
 /** PUT body — only sent fields are updated; blank secret leaves it unchanged. */
