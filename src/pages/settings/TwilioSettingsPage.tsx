@@ -153,25 +153,37 @@ export default function TwilioSettingsPage() {
     return Object.keys(diff(settings, draft)).length > 0;
   }, [settings, draft]);
 
-  const onSave = async () => {
-    if (!settings) return;
+  /** Persist any unsaved edits. Returns false if the save failed. */
+  const persist = async (): Promise<boolean> => {
+    if (!settings) return false;
     const body = diff(settings, draft);
-    if (!Object.keys(body).length) {
-      toast.info("No changes to save");
-      return;
-    }
+    if (!Object.keys(body).length) return true; // nothing to persist
     setSaving(true);
     try {
       hydrate(await twilioService.settings.save(body));
       toast.success("Twilio settings saved");
+      return true;
     } catch {
-      /* toast via interceptor */
+      /* error toast via interceptor */
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
+  const onSave = async () => {
+    if (!settings) return;
+    if (!Object.keys(diff(settings, draft)).length) {
+      toast.info("No changes to save");
+      return;
+    }
+    await persist();
+  };
+
   const onTest = async () => {
+    // Test validates the SAVED config, so persist unsaved edits first — otherwise
+    // it would test stale/empty credentials and look like a failure.
+    if (dirty && !(await persist())) return;
     setTesting(true);
     try {
       const res = await twilioService.settings.test();
