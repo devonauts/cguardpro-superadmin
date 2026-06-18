@@ -13,7 +13,7 @@ import {
   Grid3x3,
   User,
 } from "lucide-react";
-import { usePhone } from "@/context/PhoneContext";
+import { usePhone, normalizeDial } from "@/context/PhoneContext";
 import { formatPhone } from "./utils";
 
 const PAD: { k: string; s: string }[] = [
@@ -244,6 +244,16 @@ export default function Softphone() {
             )}
           </div>
 
+          {/* dial preview / validation hint */}
+          {dialInput.trim() && (() => {
+            const { e164, error } = normalizeDial(dialInput);
+            return e164 ? (
+              <p className="-mt-2 text-center text-xs text-success-600">Se marcará {formatPhone(e164)}</p>
+            ) : (
+              <p className="-mt-2 text-center text-xs text-warning-600">{error}</p>
+            );
+          })()}
+
           <div className="grid grid-cols-3 gap-y-2">
             {PAD.map(({ k, s }) => (
               <PadKey key={k} k={k} sub={s} onPress={() => pressDialKey(k)} />
@@ -254,7 +264,7 @@ export default function Softphone() {
             <button
               type="button"
               onClick={placeCall}
-              disabled={!dialInput.trim()}
+              disabled={!normalizeDial(dialInput).e164}
               className="flex h-16 w-16 items-center justify-center rounded-full bg-success-500 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Llamar"
             >

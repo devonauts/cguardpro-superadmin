@@ -50,20 +50,32 @@ interface PhoneContextValue {
 const PhoneContext = createContext<PhoneContextValue | null>(null);
 
 /**
- * E.164 normaliser for outbound dialling. Defaults bare national numbers to the
- * North American Numbering Plan (+1) since the platform number is US — a 10-digit
- * number becomes +1XXXXXXXXXX, and 11 digits starting with 1 get a leading +.
- * Always type the +country code for international numbers.
+ * Normalise a dialled number to E.164, validating completeness. Bare national
+ * numbers default to NANP (+1) since the platform number is US: a 10-digit number
+ * becomes +1XXXXXXXXXX, 11 digits starting with 1 get a leading +. An incomplete
+ * national number (not 10/11 digits, no +country code) is rejected so we never
+ * send a malformed number that Twilio treats as international (error 13227).
  */
-function toE164(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/\D/g, "");
+export function normalizeDial(raw: string): { e164: string; error?: string } {
+  const trimmed = (raw || "").trim();
+  if (!trimmed) return { e164: "", error: "Ingresa un número" };
+  if (trimmed.startsWith("+")) {
+    const d = trimmed.slice(1).replace(/\D/g, "");
+    if (d.length < 8) return { e164: "", error: "Número demasiado corto" };
+    return { e164: "+" + d };
+  }
   const digits = trimmed.replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.length === 10) return "+1" + digits; // US/Canada national → add +1
-  if (digits.length === 11 && digits.startsWith("1")) return "+" + digits;
-  return "+" + digits;
+  if (digits.length === 10) return { e164: "+1" + digits }; // US/Canada national
+  if (digits.length === 11 && digits.startsWith("1")) return { e164: "+" + digits };
+  return {
+    e164: "",
+    error: "Número incompleto. Marca 10 dígitos (EE. UU.) o +código de país para internacional.",
+  };
+}
+
+/** Preview of the E.164 number that will be dialled (empty if not yet valid). */
+export function previewDial(raw: string): string {
+  return normalizeDial(raw).e164;
 }
 
 /** Fire a browser notification (best-effort) that focuses + routes on click. */
@@ -296,9 +308,9 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
         toast.error("Softphone is not ready");
         return;
       }
-      const to = toE164(raw);
-      if (!to || to.length < 8) {
-        toast.error("Enter a valid phone number (E.164, e.g. +14155551234)");
+      const { e164: to, error } = normalizeDial(raw);
+      if (!to) {
+        toast.error(error || "Número inválido");
         return;
       }
       try {
