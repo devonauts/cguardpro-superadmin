@@ -23,6 +23,9 @@ import {
   Webhook,
   RefreshCw,
   Copy,
+  Wallet,
+  ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -33,7 +36,12 @@ import type {
   TwilioSettingsMasked,
   TwilioSettingsUpdate,
   TwilioIncomingNumber,
+  TwilioBalance,
 } from "@/services/twilio";
+
+const TWILIO_BILLING_URL = "https://console.twilio.com/us1/billing/manage-billing/billing-overview";
+const TWILIO_AUTORECHARGE_URL = "https://console.twilio.com/us1/billing/manage-billing/auto-recharge";
+const LOW_BALANCE = 5; // USD — warn below this
 
 interface Draft {
   accountSid: string;
@@ -104,6 +112,20 @@ export default function TwilioSettingsPage() {
   const [numbersLoading, setNumbersLoading] = useState(false);
   const [configuringSid, setConfiguringSid] = useState<string | null>(null);
 
+  const [balance, setBalance] = useState<TwilioBalance | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
+  const loadBalance = useCallback(async () => {
+    setBalanceLoading(true);
+    try {
+      setBalance(await twilioService.balance());
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, []);
+
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   const copyUrl = useCallback(async (url: string) => {
@@ -146,7 +168,8 @@ export default function TwilioSettingsPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    loadBalance();
+  }, [load, loadBalance]);
 
   const dirty = useMemo(() => {
     if (!settings) return false;
@@ -248,6 +271,80 @@ export default function TwilioSettingsPage() {
       <DataState loading={loading} error={error} onRetry={load}>
         {settings && (
           <div className="flex flex-col gap-4">
+            {/* Saldo / funding — Twilio has no add-funds API, so we show balance +
+                status and deep-link to billing. */}
+            <Card className="shadow-sm">
+              <CardHeader className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Wallet className="h-4 w-4" /> Saldo Twilio
+                </span>
+                <Button isIconOnly size="sm" variant="light" aria-label="Actualizar saldo" isLoading={balanceLoading} onPress={loadBalance}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardBody className="gap-3">
+                {balance?.ok ? (
+                  <>
+                    <div className="flex flex-wrap items-end justify-between gap-2">
+                      <div>
+                        <span className="text-2xl font-bold text-foreground">
+                          {balance.currency} {balance.balance?.toFixed(2)}
+                        </span>
+                        <p className="text-xs text-default-500">Saldo disponible en la cuenta</p>
+                      </div>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={balance.status === "active" ? "success" : balance.status === "suspended" ? "danger" : "default"}
+                      >
+                        {balance.status === "active" ? "Activa" : balance.status === "suspended" ? "Suspendida" : balance.status}
+                      </Chip>
+                    </div>
+
+                    {balance.status === "suspended" && (
+                      <div className="flex items-start gap-2 rounded-lg border border-danger-200 bg-danger-50 p-3 text-xs text-danger-700">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>La cuenta está <b>suspendida</b> por falta de fondos. Recarga el saldo para reactivar llamadas y SMS.</span>
+                      </div>
+                    )}
+                    {balance.status === "active" && (balance.balance ?? 0) < LOW_BALANCE && (
+                      <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-700">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>Saldo bajo. Recarga pronto o activa la auto-recarga para evitar una suspensión.</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-default-500">
+                    {balanceLoading ? "Cargando saldo…" : balance?.error || "Guarda las credenciales de Twilio para ver el saldo."}
+                  </p>
+                )}
+
+                <p className="text-[11px] text-default-400">
+                  Twilio no permite agregar fondos por API; la recarga se hace en su portal (un clic abajo). Activa la
+                  auto-recarga para que nunca se suspenda.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    color="primary"
+                    startContent={<ExternalLink className="h-4 w-4" />}
+                    onPress={() => window.open(TWILIO_BILLING_URL, "_blank", "noopener")}
+                  >
+                    Recargar saldo
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    startContent={<ExternalLink className="h-4 w-4" />}
+                    onPress={() => window.open(TWILIO_AUTORECHARGE_URL, "_blank", "noopener")}
+                  >
+                    Configurar auto-recarga
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+
             {/* Source banner */}
             <Card className="shadow-sm">
               <CardBody className="gap-3">

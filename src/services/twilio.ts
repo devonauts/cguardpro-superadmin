@@ -130,6 +130,15 @@ export interface TwilioCall {
   createdAt: string;
 }
 
+export interface TwilioBalance {
+  ok: boolean;
+  balance?: number;
+  currency?: string;
+  status?: string; // active | suspended | closed
+  accountSid?: string;
+  error?: string;
+}
+
 // ── Service ─────────────────────────────────────────────────────────────────
 
 export const twilioService = {
@@ -139,6 +148,8 @@ export const twilioService = {
       put<TwilioSettingsMasked>("/superadmin/settings/twilio", body),
     test: () => post<TwilioTestResult>("/superadmin/settings/twilio/test"),
   },
+
+  balance: () => get<TwilioBalance>("/superadmin/twilio/balance"),
 
   numbers: {
     list: () =>
