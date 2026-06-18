@@ -13,6 +13,8 @@ import {
 } from "@heroui/react";
 import { Menu, LogOut, Moon, Sun } from "lucide-react";
 import Sidebar from "./Sidebar";
+import CallOverlay from "./CallOverlay";
+import { PhoneProvider } from "@/context/PhoneContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -31,6 +33,7 @@ export default function Layout() {
       .toUpperCase();
 
   return (
+    <PhoneProvider>
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden lg:block">
@@ -102,6 +105,10 @@ export default function Layout() {
           </div>
         </main>
       </div>
+
+      {/* App-wide floating incoming/active call widget */}
+      <CallOverlay />
     </div>
+    </PhoneProvider>
   );
 }

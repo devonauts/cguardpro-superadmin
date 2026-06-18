@@ -13,6 +13,7 @@ import {
   Phone,
   PhoneCall,
 } from "lucide-react";
+import { usePhone } from "@/context/PhoneContext";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -29,6 +30,7 @@ const NAV = [
 ];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { unreadCount } = usePhone();
   return (
     <div className="flex h-full w-64 flex-col border-r border-divider bg-content1">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -58,7 +60,12 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             }
           >
             <Icon className="h-4.5 w-4.5 shrink-0" style={{ width: 18, height: 18 }} />
-            {label}
+            <span className="flex-1">{label}</span>
+            {to === "/phone" && unreadCount > 0 && (
+              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
