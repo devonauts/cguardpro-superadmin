@@ -96,6 +96,10 @@ export async function put<T>(url: string, body?: any, silentError?: boolean): Pr
   const res = await api.put<T>(url, body, { silentError });
   return res.data;
 }
+export async function patch<T>(url: string, body?: any, silentError?: boolean): Promise<T> {
+  const res = await api.patch<T>(url, body, { silentError });
+  return res.data;
+}
 export async function del<T>(url: string, params?: any, silentError?: boolean): Promise<T> {
   const res = await api.delete<T>(url, { params, silentError });
   return res.data;

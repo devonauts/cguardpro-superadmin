@@ -14,7 +14,9 @@ import {
 import { Menu, LogOut, Moon, Sun } from "lucide-react";
 import Sidebar from "./Sidebar";
 import FloatingPhone from "./FloatingPhone";
+import NotificationBell from "./NotificationBell";
 import { PhoneProvider } from "@/context/PhoneContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -34,6 +36,7 @@ export default function Layout() {
 
   return (
     <PhoneProvider>
+    <NotificationProvider>
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden lg:block">
@@ -68,6 +71,7 @@ export default function Layout() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <Button isIconOnly variant="light" onPress={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-4.5 w-4.5" style={{ width: 18, height: 18 }} /> : <Moon className="h-4.5 w-4.5" style={{ width: 18, height: 18 }} />}
             </Button>
@@ -109,6 +113,7 @@ export default function Layout() {
       {/* App-wide draggable softphone widget (full phone view off the /phone page) */}
       <FloatingPhone />
     </div>
+    </NotificationProvider>
     </PhoneProvider>
   );
 }

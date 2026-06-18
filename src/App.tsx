@@ -14,6 +14,7 @@ import AuditLogPage from "./pages/audit/AuditLogPage";
 import StripeSettingsPage from "./pages/settings/StripeSettingsPage";
 import TwilioSettingsPage from "./pages/settings/TwilioSettingsPage";
 import PhoneCenter from "./pages/phone/PhoneCenter";
+import NotificationsPage from "./pages/notifications/NotificationsPage";
 import AddonCoursesPage from "./pages/training/AddonCoursesPage";
 import GrantsPage from "./pages/training/GrantsPage";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="billing/tenants/:id" element={<TenantBillingDetail />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="phone" element={<PhoneCenter />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="training/courses" element={<AddonCoursesPage />} />
         <Route path="training/grants" element={<GrantsPage />} />
         <Route path="observability" element={<ObservabilityPage />} />

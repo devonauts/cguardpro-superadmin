@@ -49,13 +49,21 @@ interface PhoneContextValue {
 
 const PhoneContext = createContext<PhoneContextValue | null>(null);
 
-/** Light-touch E.164 normaliser for outbound dialling. */
+/**
+ * E.164 normaliser for outbound dialling. Defaults bare national numbers to the
+ * North American Numbering Plan (+1) since the platform number is US — a 10-digit
+ * number becomes +1XXXXXXXXXX, and 11 digits starting with 1 get a leading +.
+ * Always type the +country code for international numbers.
+ */
 function toE164(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
   if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/\D/g, "");
   const digits = trimmed.replace(/\D/g, "");
-  return digits ? "+" + digits : "";
+  if (!digits) return "";
+  if (digits.length === 10) return "+1" + digits; // US/Canada national → add +1
+  if (digits.length === 11 && digits.startsWith("1")) return "+" + digits;
+  return "+" + digits;
 }
 
 /** Fire a browser notification (best-effort) that focuses + routes on click. */

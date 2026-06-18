@@ -12,8 +12,10 @@ import {
   Gift,
   Phone,
   PhoneCall,
+  Bell,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
+import { useNotifications } from "@/context/NotificationContext";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -21,6 +23,7 @@ const NAV = [
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/users", label: "Users", icon: Users },
   { to: "/phone", label: "Teléfono", icon: PhoneCall },
+  { to: "/notifications", label: "Notificaciones", icon: Bell },
   { to: "/training/courses", label: "Addon courses", icon: GraduationCap },
   { to: "/training/grants", label: "Course grants", icon: Gift },
   { to: "/observability", label: "Observability", icon: Activity },
@@ -31,6 +34,7 @@ const NAV = [
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { unreadCount } = usePhone();
+  const { unread: notifUnread } = useNotifications();
   return (
     <div className="flex h-full w-64 flex-col border-r border-divider bg-content1">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -64,6 +68,11 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             {to === "/phone" && unreadCount > 0 && (
               <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white">
                 {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+            {to === "/notifications" && notifUnread > 0 && (
+              <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white">
+                {notifUnread > 99 ? "99+" : notifUnread}
               </span>
             )}
           </NavLink>
