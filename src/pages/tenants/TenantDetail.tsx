@@ -14,7 +14,6 @@ import {
   ModalBody,
   ModalFooter,
   Textarea,
-  Input,
   useDisclosure,
 } from "@heroui/react";
 import {
@@ -27,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataState } from "@/components/ui/DataState";
+import { DeleteTenantModal } from "./components/DeleteTenantModal";
 import { tenantsService } from "@/services/tenants";
 import type { TenantDetail as TenantDetailType } from "@/types";
 import {
@@ -68,7 +68,6 @@ export default function TenantDetail() {
   const deleteModal = useDisclosure();
 
   const [reason, setReason] = useState("");
-  const [confirmText, setConfirmText] = useState("");
   const [acting, setActing] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -114,24 +113,6 @@ export default function TenantDetail() {
       await tenantsService.reactivate(id);
       toast.success("Tenant reactivated");
       load();
-    } catch {
-      /* toast via interceptor */
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const doDelete = async () => {
-    if (confirmText.trim().toUpperCase() !== "DELETE") return;
-    setActing(true);
-    try {
-      const res = await tenantsService.remove(id);
-      toast.success(
-        `Tenant deleted (${res.recordsDeleted ?? 0} records affected)`,
-      );
-      deleteModal.onClose();
-      setConfirmText("");
-      navigate("/tenants");
     } catch {
       /* toast via interceptor */
     } finally {
@@ -373,56 +354,13 @@ export default function TenantDetail() {
         </ModalContent>
       </Modal>
 
-      {/* Delete modal */}
-      <Modal
+      {/* Delete modal (shared with the tenants list) */}
+      <DeleteTenantModal
         isOpen={deleteModal.isOpen}
-        onClose={() => {
-          if (!acting) {
-            setConfirmText("");
-            deleteModal.onClose();
-          }
-        }}
-      >
-        <ModalContent>
-          <ModalHeader className="text-danger">Delete tenant</ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-500">
-              This soft-deletes <span className="font-medium">{tenant?.name}</span>{" "}
-              and its data. Type{" "}
-              <span className="font-mono font-semibold text-danger">DELETE</span>{" "}
-              to confirm.
-            </p>
-            <Input
-              aria-label="Type DELETE to confirm"
-              placeholder="DELETE"
-              variant="bordered"
-              value={confirmText}
-              onValueChange={setConfirmText}
-              autoFocus
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              isDisabled={acting}
-              onPress={() => {
-                setConfirmText("");
-                deleteModal.onClose();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              isLoading={acting}
-              isDisabled={confirmText.trim().toUpperCase() !== "DELETE"}
-              onPress={doDelete}
-            >
-              Delete tenant
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        onClose={deleteModal.onClose}
+        tenant={tenant ? { id: tenant.id, name: tenant.name } : null}
+        onDeleted={() => navigate("/tenants")}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataState } from "@/components/ui/DataState";
 import { tenantsService } from "@/services/tenants";
@@ -29,6 +30,8 @@ import {
   billingStatusLabel,
 } from "@/lib/format";
 import { CreateTenantModal } from "./components/CreateTenantModal";
+import { DeleteTenantModal } from "./components/DeleteTenantModal";
+import { TenantRowActions } from "./components/TenantRowActions";
 
 const LIMIT = 20;
 
@@ -51,6 +54,11 @@ const BILLING_OPTIONS = [
 export default function TenantsList() {
   const navigate = useNavigate();
   const createModal = useDisclosure();
+  const deleteModal = useDisclosure();
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -102,6 +110,16 @@ export default function TenantsList() {
     createModal.onClose();
     load();
     navigate(`/tenants/${tenant.id}`);
+  };
+
+  const reactivate = async (t: TenantRow) => {
+    try {
+      await tenantsService.reactivate(t.id);
+      toast.success(`Tenant “${t.name}” reactivated`);
+      load();
+    } catch {
+      /* error toast handled by the api interceptor */
+    }
   };
 
   const subtitle = useMemo(
@@ -205,6 +223,9 @@ export default function TenantsList() {
                 <TableColumn>SEATS</TableColumn>
                 <TableColumn>MRR</TableColumn>
                 <TableColumn>CREATED</TableColumn>
+                <TableColumn aria-label="Actions" align="end">
+                  {" "}
+                </TableColumn>
               </TableHeader>
               <TableBody items={rows} emptyContent="No tenants.">
                 {(t) => (
@@ -254,6 +275,17 @@ export default function TenantsList() {
                     <TableCell className="text-sm text-default-500">
                       {fmtDate(t.createdAt)}
                     </TableCell>
+                    <TableCell>
+                      <TenantRowActions
+                        suspended={!!t.suspendedAt}
+                        onView={() => navigate(`/tenants/${t.id}`)}
+                        onReactivate={() => reactivate(t)}
+                        onDelete={() => {
+                          setDeleteTarget({ id: t.id, name: t.name });
+                          deleteModal.onOpen();
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -266,6 +298,17 @@ export default function TenantsList() {
         isOpen={createModal.isOpen}
         onClose={createModal.onClose}
         onCreated={onCreated}
+      />
+
+      <DeleteTenantModal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.onClose}
+        tenant={deleteTarget}
+        onDeleted={() => {
+          // If we just removed the last row on a page, step back a page.
+          if (rows.length === 1 && page > 1) setPage(page - 1);
+          else load();
+        }}
       />
     </div>
   );
