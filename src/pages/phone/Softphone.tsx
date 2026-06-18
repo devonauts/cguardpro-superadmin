@@ -1,236 +1,268 @@
-import { useMemo } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Chip, Spinner } from "@heroui/react";
+import { useMemo, useState } from "react";
+import { Button, Spinner } from "@heroui/react";
 import {
   Phone,
   PhoneOff,
   PhoneIncoming,
-  PhoneCall,
   Mic,
   MicOff,
   Delete,
   AlertTriangle,
   Settings,
   RefreshCw,
+  Grid3x3,
+  User,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
+import { formatPhone } from "./utils";
 
-const DIALPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+const PAD: { k: string; s: string }[] = [
+  { k: "1", s: "" }, { k: "2", s: "ABC" }, { k: "3", s: "DEF" },
+  { k: "4", s: "GHI" }, { k: "5", s: "JKL" }, { k: "6", s: "MNO" },
+  { k: "7", s: "PQRS" }, { k: "8", s: "TUV" }, { k: "9", s: "WXYZ" },
+  { k: "*", s: "" }, { k: "0", s: "+" }, { k: "#", s: "" },
+];
 
-/** Format seconds → m:ss for the in-call timer. */
 function fmtDuration(totalSec: number): string {
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function avatarText(num: string): string {
+  const d = num.replace(/\D/g, "");
+  return d ? d.slice(-2) : "";
+}
+
+/** A circular dialpad key with the classic letter sub-label. */
+function PadKey({ k, sub, onPress }: { k: string; sub: string; onPress: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      className="mx-auto flex h-[52px] w-[52px] flex-col items-center justify-center rounded-full bg-default-100 leading-none transition-transform hover:bg-default-200 active:scale-90"
+    >
+      <span className="text-xl font-medium text-foreground">{k}</span>
+      {sub ? <span className="mt-0.5 text-[8px] font-semibold tracking-[0.15em] text-default-400">{sub}</span> : null}
+    </button>
+  );
+}
+
 /**
- * Softphone panel for the /phone page. The Twilio Device and all call state live
- * in the app-level PhoneProvider (so calls work from any page); this component
- * is a pure view over that shared state.
+ * Phone-styled softphone view for the /phone page and the floating widget.
+ * All call state lives in PhoneProvider; this is a pure view.
  */
 export default function Softphone() {
   const {
-    deviceState,
-    deviceError,
-    callPhase,
-    peerNumber,
-    muted,
-    elapsed,
-    dialInput,
-    setDialInput,
-    setupDevice,
-    placeCall,
-    acceptCall,
-    rejectCall,
-    hangup,
-    toggleMute,
-    pressDialKey,
+    deviceState, deviceError, callPhase, peerNumber, muted, elapsed,
+    dialInput, setDialInput, setupDevice, placeCall, acceptCall, rejectCall,
+    hangup, toggleMute, pressDialKey,
   } = usePhone();
 
-  const inCall = callPhase === "active" || callPhase === "connecting";
-  const ringing = callPhase === "incoming";
+  const [showDtmf, setShowDtmf] = useState(false);
 
-  const statusChip = useMemo(() => {
-    switch (deviceState) {
-      case "ready":
-        return <Chip size="sm" color="success" variant="flat">Ready</Chip>;
-      case "loading":
-      case "registering":
-        return <Chip size="sm" color="default" variant="flat">Connecting…</Chip>;
-      case "unconfigured":
-        return <Chip size="sm" color="warning" variant="flat">Not configured</Chip>;
-      case "no-mic":
-        return <Chip size="sm" color="danger" variant="flat">Mic blocked</Chip>;
-      default:
-        return <Chip size="sm" color="danger" variant="flat">Error</Chip>;
-    }
+  const ringing = callPhase === "incoming";
+  const inCall = callPhase === "active" || callPhase === "connecting";
+
+  const statusDot = useMemo(() => {
+    const map: Record<string, [string, string]> = {
+      ready: ["bg-success-500", "Listo"],
+      loading: ["bg-default-400 animate-pulse", "Conectando…"],
+      registering: ["bg-default-400 animate-pulse", "Conectando…"],
+      unconfigured: ["bg-warning-500", "Sin configurar"],
+      "no-mic": ["bg-danger-500", "Micrófono bloqueado"],
+      error: ["bg-danger-500", "Error"],
+    };
+    const [dot, label] = map[deviceState] || map.error;
+    return (
+      <span className="flex items-center gap-1.5 text-[11px] font-medium text-default-500">
+        <span className={`h-2 w-2 rounded-full ${dot}`} />
+        {label}
+      </span>
+    );
   }, [deviceState]);
 
-  return (
-    <Card className="flex h-full flex-col shadow-sm">
-      <CardHeader className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <PhoneCall className="text-primary" style={{ width: 18, height: 18 }} />
-          <span className="text-sm font-semibold text-foreground">Softphone</span>
+  // ── Incoming call screen ────────────────────────────────────────────────────
+  if (ringing) {
+    return (
+      <div className="flex flex-col items-center gap-6 rounded-3xl bg-gradient-to-b from-primary-50 to-content1 px-5 py-8 text-center">
+        <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-primary">
+          <PhoneIncoming className="h-4 w-4 animate-pulse" /> Llamada entrante
         </div>
-        <div className="flex items-center gap-2">
-          {statusChip}
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            aria-label="Reconnect softphone"
-            onPress={setupDevice}
-            isDisabled={deviceState === "loading" || deviceState === "registering"}
+        <div className="relative">
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-600 text-2xl font-semibold text-white shadow-lg">
+            {avatarText(peerNumber) || <User className="h-9 w-9" />}
+          </div>
+        </div>
+        <p className="text-lg font-semibold text-foreground">{formatPhone(peerNumber) || "Desconocido"}</p>
+        <div className="flex w-full items-center justify-around pt-2">
+          <button
+            type="button"
+            onClick={rejectCall}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-danger text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+            aria-label="Rechazar"
           >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+            <PhoneOff className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={acceptCall}
+            className="flex h-16 w-16 animate-bounce items-center justify-center rounded-full bg-success-500 text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+            aria-label="Aceptar"
+          >
+            <Phone className="h-6 w-6" />
+          </button>
         </div>
-      </CardHeader>
+      </div>
+    );
+  }
 
-      <CardBody className="flex flex-1 flex-col gap-4">
-        {deviceState === "unconfigured" && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-warning-200 bg-warning-50 p-5 text-center">
-            <Settings className="h-7 w-7 text-warning" />
-            <p className="text-sm font-medium text-foreground">Twilio isn't configured yet</p>
-            <p className="text-xs text-default-500">
-              Add your Twilio API key, TwiML App SID and phone number in Settings → Twilio,
-              then reconnect to start making calls.
-            </p>
-          </div>
-        )}
+  // ── Active / connecting call screen ─────────────────────────────────────────
+  if (inCall) {
+    return (
+      <div className="flex flex-col items-center gap-5 rounded-3xl bg-gradient-to-b from-success-50 to-content1 px-5 py-8 text-center">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-success-400 to-success-600 text-2xl font-semibold text-white shadow-lg">
+          {avatarText(peerNumber) || <User className="h-9 w-9" />}
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-foreground">{formatPhone(peerNumber) || "Desconocido"}</p>
+          <p className="mt-1 font-mono text-sm text-default-500">
+            {callPhase === "active" ? fmtDuration(elapsed) : "Llamando…"}
+          </p>
+        </div>
 
-        {deviceState === "no-mic" && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-5 text-center">
-            <MicOff className="h-7 w-7 text-danger" />
-            <p className="text-sm font-medium text-foreground">Microphone access required</p>
-            <p className="text-xs text-default-500">
-              {deviceError || "Allow microphone access in your browser, then reconnect."}
-            </p>
-            <Button size="sm" variant="flat" color="primary" onPress={setupDevice}>Retry</Button>
-          </div>
-        )}
-
-        {deviceState === "error" && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-5 text-center">
-            <AlertTriangle className="h-7 w-7 text-danger" />
-            <p className="text-sm font-medium text-foreground">Softphone error</p>
-            <p className="text-xs text-default-500">{deviceError}</p>
-            <Button size="sm" variant="flat" color="primary" onPress={setupDevice}>Retry</Button>
-          </div>
-        )}
-
-        {(deviceState === "loading" || deviceState === "registering") && (
-          <div className="flex flex-1 items-center justify-center">
-            <Spinner color="primary" label="Connecting softphone…" />
-          </div>
-        )}
-
-        {/* Incoming call */}
-        {ringing && (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-primary-200 bg-primary-50 p-6 text-center">
-            <PhoneIncoming className="h-9 w-9 animate-pulse text-primary" />
-            <div>
-              <p className="text-xs uppercase tracking-wide text-default-500">Incoming call</p>
-              <p className="text-lg font-semibold text-foreground">{peerNumber || "Unknown"}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button color="danger" variant="flat" startContent={<PhoneOff className="h-4 w-4" />} onPress={rejectCall}>
-                Reject
-              </Button>
-              <Button color="success" className="text-white" startContent={<Phone className="h-4 w-4" />} onPress={acceptCall}>
-                Accept
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Active / connecting */}
-        {inCall && (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-success-200 bg-success-50 p-6 text-center">
-            <PhoneCall className="h-9 w-9 text-success-600" />
-            <div>
-              <p className="text-xs uppercase tracking-wide text-default-500">
-                {callPhase === "connecting" ? "Calling" : "On call"}
-              </p>
-              <p className="text-lg font-semibold text-foreground">{peerNumber || "Unknown"}</p>
-              <p className="mt-1 font-mono text-sm text-default-600">
-                {callPhase === "active" ? fmtDuration(elapsed) : "…"}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                isIconOnly size="lg" radius="full"
-                variant={muted ? "solid" : "flat"}
-                color={muted ? "warning" : "default"}
-                aria-label={muted ? "Unmute" : "Mute"}
-                onPress={toggleMute}
-                isDisabled={callPhase !== "active"}
-              >
-                {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-              </Button>
-              <Button isIconOnly size="lg" radius="full" color="danger" aria-label="Hang up" onPress={hangup}>
-                <PhoneOff className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Dialer (ready & idle) */}
-        {deviceState === "ready" && callPhase === "idle" && (
-          <div className="flex flex-1 flex-col gap-3">
-            <Input
-              aria-label="Phone number to call"
-              value={dialInput}
-              onValueChange={setDialInput}
-              placeholder="+1 415 555 1234"
-              variant="bordered"
-              startContent={<Phone className="h-4 w-4 text-default-400" />}
-              endContent={
-                dialInput ? (
-                  <button
-                    type="button"
-                    aria-label="Delete last digit"
-                    className="text-default-400 hover:text-foreground"
-                    onClick={() => setDialInput(dialInput.slice(0, -1))}
-                  >
-                    <Delete className="h-4 w-4" />
-                  </button>
-                ) : null
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter") placeCall();
-              }}
-            />
-            <div className="grid grid-cols-3 gap-2">
-              {DIALPAD_KEYS.map((k) => (
-                <Button key={k} variant="flat" className="h-12 text-lg font-medium" onPress={() => pressDialKey(k)}>
-                  {k}
-                </Button>
-              ))}
-            </div>
-            <Button
-              color="success" size="lg" className="text-white"
-              startContent={<Phone className="h-5 w-5" />}
-              onPress={placeCall}
-              isDisabled={!dialInput.trim()}
-            >
-              Call
-            </Button>
-          </div>
-        )}
-
-        {/* In-call DTMF dialpad */}
-        {callPhase === "active" && (
-          <div className="grid grid-cols-3 gap-2">
-            {DIALPAD_KEYS.map((k) => (
-              <Button key={k} variant="flat" size="sm" className="h-10 text-base font-medium" onPress={() => pressDialKey(k)}>
-                {k}
-              </Button>
+        {showDtmf && callPhase === "active" && (
+          <div className="grid w-full max-w-[220px] grid-cols-3 gap-2">
+            {PAD.map(({ k, s }) => (
+              <PadKey key={k} k={k} sub={s} onPress={() => pressDialKey(k)} />
             ))}
           </div>
         )}
-      </CardBody>
-    </Card>
+
+        <div className="flex w-full items-center justify-around pt-1">
+          <button
+            type="button"
+            onClick={toggleMute}
+            disabled={callPhase !== "active"}
+            className={`flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full transition ${
+              muted ? "bg-warning-400 text-white" : "bg-default-100 text-foreground hover:bg-default-200"
+            } disabled:opacity-40`}
+            aria-label={muted ? "Activar micrófono" : "Silenciar"}
+          >
+            {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowDtmf((v) => !v)}
+            disabled={callPhase !== "active"}
+            className={`flex h-14 w-14 items-center justify-center rounded-full transition ${
+              showDtmf ? "bg-primary text-white" : "bg-default-100 text-foreground hover:bg-default-200"
+            } disabled:opacity-40`}
+            aria-label="Teclado"
+          >
+            <Grid3x3 className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowDtmf(false); hangup(); }}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-danger text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+            aria-label="Colgar"
+          >
+            <PhoneOff className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Non-call states ─────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between px-1">
+        {statusDot}
+        <Button
+          isIconOnly size="sm" variant="light" aria-label="Reconectar"
+          onPress={setupDevice}
+          isDisabled={deviceState === "loading" || deviceState === "registering"}
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {deviceState === "unconfigured" && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-warning-200 bg-warning-50 p-5 text-center">
+          <Settings className="h-7 w-7 text-warning" />
+          <p className="text-sm font-medium text-foreground">Twilio aún no está configurado</p>
+          <p className="text-xs text-default-500">
+            Agrega tu API Key, TwiML App SID y número en Configuración → Twilio y reconecta.
+          </p>
+        </div>
+      )}
+
+      {deviceState === "no-mic" && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-danger-200 bg-danger-50 p-5 text-center">
+          <MicOff className="h-7 w-7 text-danger" />
+          <p className="text-sm font-medium text-foreground">Se requiere acceso al micrófono</p>
+          <p className="text-xs text-default-500">{deviceError || "Permite el micrófono en el navegador y reconecta."}</p>
+          <Button size="sm" variant="flat" color="primary" onPress={setupDevice}>Reintentar</Button>
+        </div>
+      )}
+
+      {deviceState === "error" && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-danger-200 bg-danger-50 p-5 text-center">
+          <AlertTriangle className="h-7 w-7 text-danger" />
+          <p className="text-sm font-medium text-foreground">Error del teléfono</p>
+          <p className="text-xs text-default-500">{deviceError}</p>
+          <Button size="sm" variant="flat" color="primary" onPress={setupDevice}>Reintentar</Button>
+        </div>
+      )}
+
+      {(deviceState === "loading" || deviceState === "registering") && (
+        <div className="flex items-center justify-center py-10">
+          <Spinner color="primary" label="Conectando teléfono…" />
+        </div>
+      )}
+
+      {/* Dialer */}
+      {deviceState === "ready" && (
+        <div className="flex flex-col gap-4">
+          {/* number display */}
+          <div className="flex min-h-[44px] items-center justify-center gap-2 px-2">
+            <span className="truncate text-center text-2xl font-light tracking-wide text-foreground">
+              {dialInput || <span className="text-default-300">Marcar número</span>}
+            </span>
+            {dialInput && (
+              <button
+                type="button"
+                aria-label="Borrar"
+                className="text-default-400 hover:text-foreground"
+                onClick={() => setDialInput(dialInput.slice(0, -1))}
+              >
+                <Delete className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-y-2">
+            {PAD.map(({ k, s }) => (
+              <PadKey key={k} k={k} sub={s} onPress={() => pressDialKey(k)} />
+            ))}
+          </div>
+
+          <div className="flex justify-center pt-1">
+            <button
+              type="button"
+              onClick={placeCall}
+              disabled={!dialInput.trim()}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-success-500 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Llamar"
+            >
+              <Phone className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

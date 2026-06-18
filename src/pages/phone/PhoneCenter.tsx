@@ -1,3 +1,5 @@
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { PhoneCall } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import SmsInbox from "./SmsInbox";
 import Softphone from "./Softphone";
@@ -27,9 +29,15 @@ export default function PhoneCenter() {
         </div>
 
         {/* In-browser softphone */}
-        <div className="min-h-0 lg:h-[calc(100vh-12rem)]">
-          <Softphone />
-        </div>
+        <Card className="min-h-0 shadow-sm lg:h-[calc(100vh-12rem)]">
+          <CardHeader className="flex items-center gap-2 pb-0">
+            <PhoneCall className="text-primary" style={{ width: 18, height: 18 }} />
+            <span className="text-sm font-semibold text-foreground">Softphone</span>
+          </CardHeader>
+          <CardBody className="overflow-y-auto">
+            <Softphone />
+          </CardBody>
+        </Card>
       </div>
     </div>
   );

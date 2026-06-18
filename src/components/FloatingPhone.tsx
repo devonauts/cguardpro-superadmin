@@ -1,29 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@heroui/react";
-import { Phone, Minus, GripHorizontal, Maximize2, PhoneIncoming } from "lucide-react";
+import { Phone, Minus, GripHorizontal, Maximize2, PhoneIncoming, MessageSquare } from "lucide-react";
 import Softphone from "@/pages/phone/Softphone";
+import { SmsInbox } from "@/pages/phone/SmsInbox";
 import { usePhone } from "@/context/PhoneContext";
 
 const POS_KEY = "cgp_phone_pos";
 const MIN_KEY = "cgp_phone_min";
-const WIDTH = 320;
+const TAB_KEY = "cgp_phone_tab";
+const WIDTH = 364;
+
+type Tab = "phone" | "messages";
 
 /**
- * App-wide draggable softphone widget. When the user leaves the /phone page the
- * full phone view stays available as a floating, draggable, phone-styled widget
- * (collapsible to a bubble). Auto-expands on an incoming/active call. Renders the
- * shared <Softphone/> (state lives in PhoneProvider, so calls never drop on
- * navigation). Hidden on /phone itself.
+ * App-wide draggable phone widget. Keeps the full phone view AND the SMS inbox
+ * available on any page (tabbed), so calls and messages can be managed without
+ * being on the Teléfono page. Collapses to a bubble; auto-expands on a call.
+ * Hidden on /phone itself. Renders the shared <Softphone/> + <SmsInbox/> (state
+ * lives in PhoneProvider / the socket, so nothing drops on navigation).
  */
 export default function FloatingPhone() {
-  const { callPhase, unreadCount } = usePhone();
+  const { callPhase, unreadCount, clearUnread } = usePhone();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const [minimized, setMinimized] = useState<boolean>(
-    () => localStorage.getItem(MIN_KEY) === "1",
-  );
+  const [minimized, setMinimized] = useState<boolean>(() => localStorage.getItem(MIN_KEY) === "1");
+  const [tab, setTab] = useState<Tab>(() => (localStorage.getItem(TAB_KEY) === "messages" ? "messages" : "phone"));
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
     try {
       const raw = localStorage.getItem(POS_KEY);
@@ -45,19 +48,33 @@ export default function FloatingPhone() {
     }
   }, []);
 
-  // Auto-expand when a call is ringing or live so it's never missed.
+  const selectTab = useCallback((t: Tab) => {
+    setTab(t);
+    try {
+      localStorage.setItem(TAB_KEY, t);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Auto-expand on a ringing/live call and jump to the phone tab.
   useEffect(() => {
     if (callPhase === "incoming" || callPhase === "active" || callPhase === "connecting") {
       setMinimized(false);
+      setTab("phone");
     }
   }, [callPhase]);
+
+  // Clear the unread badge while the messages tab is open.
+  useEffect(() => {
+    if (!minimized && tab === "messages" && unreadCount > 0) clearUnread();
+  }, [minimized, tab, unreadCount, clearUnread]);
 
   const startDrag = useCallback((e: React.PointerEvent) => {
     const el = elRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
-
     const move = (ev: PointerEvent) => {
       if (!dragRef.current) return;
       const w = el.offsetWidth;
@@ -90,13 +107,13 @@ export default function FloatingPhone() {
   const ringing = callPhase === "incoming";
   const active = callPhase === "active" || callPhase === "connecting";
 
-  // Collapsed: a floating phone bubble (FAB) with a ring/unread indicator.
+  // Collapsed bubble.
   if (minimized) {
     return (
       <button
         type="button"
         onClick={() => setMin(false)}
-        aria-label="Open phone"
+        aria-label="Abrir teléfono"
         className={`fixed bottom-5 right-5 z-[100] grid h-14 w-14 place-items-center rounded-full text-white shadow-2xl transition-transform hover:scale-105 active:scale-95 ${
           ringing ? "animate-bounce bg-primary" : active ? "bg-success-600" : "bg-primary"
         }`}
@@ -115,6 +132,22 @@ export default function FloatingPhone() {
     ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
     : { right: 20, bottom: 20 };
 
+  const tabBtn = (t: Tab, label: string, icon: React.ReactNode) => (
+    <button
+      type="button"
+      onClick={() => selectTab(t)}
+      className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${
+        tab === t ? "bg-content1 text-primary shadow-sm" : "text-default-500 hover:text-foreground"
+      }`}
+    >
+      {icon}
+      {label}
+      {t === "messages" && unreadCount > 0 && (
+        <span className="absolute right-2 top-1 h-2 w-2 rounded-full bg-danger" />
+      )}
+    </button>
+  );
+
   return (
     <div
       ref={elRef}
@@ -131,18 +164,29 @@ export default function FloatingPhone() {
           Teléfono
         </span>
         <div className="flex items-center gap-0.5">
-          <Button isIconOnly size="sm" variant="light" aria-label="Open phone center" onPress={() => navigate("/phone")}>
+          <Button isIconOnly size="sm" variant="light" aria-label="Abrir centro telefónico" onPress={() => navigate("/phone")}>
             <Maximize2 className="h-4 w-4" />
           </Button>
-          <Button isIconOnly size="sm" variant="light" aria-label="Minimize" onPress={() => setMin(true)}>
+          <Button isIconOnly size="sm" variant="light" aria-label="Minimizar" onPress={() => setMin(true)}>
             <Minus className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Full phone view (shared Softphone) */}
-      <div className="max-h-[72vh] overflow-y-auto p-3">
-        <Softphone />
+      {/* Tabs */}
+      <div className="flex gap-1 bg-default-100 px-2 pb-2">
+        {tabBtn("phone", "Llamadas", <Phone className="h-3.5 w-3.5" />)}
+        {tabBtn("messages", "Mensajes", <MessageSquare className="h-3.5 w-3.5" />)}
+      </div>
+
+      {/* Content — both mounted (hidden) so SMS stays live + state persists */}
+      <div className="h-[min(72vh,600px)]">
+        <div className={tab === "phone" ? "h-full overflow-y-auto p-4" : "hidden"}>
+          <Softphone />
+        </div>
+        <div className={tab === "messages" ? "h-full p-2" : "hidden"}>
+          <SmsInbox compact />
+        </div>
       </div>
     </div>
   );

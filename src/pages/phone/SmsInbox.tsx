@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, useDisclosure } from "@heroui/react";
 import { ArrowLeft, MessageSquare, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { clsx } from "clsx";
 
 import twilioService, {
@@ -43,7 +42,7 @@ const CONV_LIMIT = 50;
  * Rendered standalone (route) or beside the softphone in PhoneCenter; fills the
  * height of its parent container (the parent sets a fixed h-* on lg screens).
  */
-export function SmsInbox() {
+export function SmsInbox({ compact = false }: { compact?: boolean } = {}) {
   const [conversations, setConversations] = useState<TwilioConversation[]>([]);
   const [convLoading, setConvLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -153,9 +152,9 @@ export function SmsInbox() {
 
     if (isActive) {
       twilioService.conversations.markRead(conversationId).catch(() => {});
-    } else {
-      toast.info(`New SMS from ${formatPhone(message.fromNumber)}`);
     }
+    // App-wide notification (toast/sound/badge) is handled by PhoneProvider so it
+    // works on any page and never double-fires.
   });
 
   // ── Realtime: outbound (sync across tabs/devices) ────────────────────────────
@@ -237,8 +236,9 @@ export function SmsInbox() {
       {/* Conversation list — hidden on mobile when a thread is open */}
       <div
         className={clsx(
-          "h-full w-full shrink-0 sm:w-72 md:w-80",
-          activeId ? "hidden sm:flex" : "flex",
+          "h-full w-full shrink-0",
+          compact ? "" : "sm:w-72 md:w-80",
+          activeId ? (compact ? "hidden" : "hidden sm:flex") : "flex",
         )}
       >
         <ConversationList
@@ -256,7 +256,7 @@ export function SmsInbox() {
       <div
         className={clsx(
           "h-full min-w-0 flex-1 flex-col",
-          activeId ? "flex" : "hidden sm:flex",
+          activeId ? "flex" : compact ? "hidden" : "hidden sm:flex",
         )}
       >
         {active ? (
@@ -266,7 +266,7 @@ export function SmsInbox() {
                 isIconOnly
                 size="sm"
                 variant="light"
-                className="sm:hidden"
+                className={compact ? "" : "sm:hidden"}
                 aria-label="Back"
                 onPress={() => setActiveId(null)}
               >
