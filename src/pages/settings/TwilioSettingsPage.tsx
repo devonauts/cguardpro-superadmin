@@ -396,9 +396,9 @@ export default function TwilioSettingsPage() {
                     <Webhook className="h-4 w-4" /> Webhook URLs
                   </span>
                   <span className="text-xs text-default-500">
-                    Register these in Twilio. The phone-number webhooks (SMS &amp; Voice) can be
-                    set automatically below with “Configurar webhooks”; the TwiML App Voice URL
-                    must be set by hand on your TwiML App.
+                    All Twilio webhooks use <span className="font-semibold text-foreground">HTTP POST</span>.
+                    The phone-number webhooks (SMS &amp; Voice) can be set automatically below with
+                    “Configurar webhooks”; the TwiML App Voice URL must be set by hand on your TwiML App.
                   </span>
                 </CardHeader>
                 <CardBody className="flex flex-col gap-2">
@@ -415,6 +415,7 @@ export default function TwilioSettingsPage() {
                         row.highlight ? "border-warning-200 bg-warning-50/40" : "border-default-200"
                       }`}
                     >
+                      <Chip size="sm" variant="flat" color="success" className="shrink-0 font-semibold">POST</Chip>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-semibold text-foreground">{row.label}</span>
