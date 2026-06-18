@@ -13,7 +13,7 @@ import {
 } from "@heroui/react";
 import { Menu, LogOut, Moon, Sun } from "lucide-react";
 import Sidebar from "./Sidebar";
-import CallOverlay from "./CallOverlay";
+import FloatingPhone from "./FloatingPhone";
 import { PhoneProvider } from "@/context/PhoneContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -106,8 +106,8 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* App-wide floating incoming/active call widget */}
-      <CallOverlay />
+      {/* App-wide draggable softphone widget (full phone view off the /phone page) */}
+      <FloatingPhone />
     </div>
     </PhoneProvider>
   );
