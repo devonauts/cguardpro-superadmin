@@ -139,6 +139,17 @@ export interface TwilioBalance {
   error?: string;
 }
 
+export interface TwilioAnalytics {
+  ok: boolean;
+  period?: "thismonth" | "lastmonth" | "today";
+  currency?: string;
+  sms?: { count: number; cost: number };
+  calls?: { count: number; minutes: number; cost: number };
+  total?: { cost: number };
+  daily?: { date: string; sms: number; calls: number }[];
+  error?: string;
+}
+
 // ── Service ─────────────────────────────────────────────────────────────────
 
 export const twilioService = {
@@ -150,6 +161,9 @@ export const twilioService = {
   },
 
   balance: () => get<TwilioBalance>("/superadmin/twilio/balance"),
+
+  analytics: (period: "thismonth" | "lastmonth" | "today" = "thismonth") =>
+    get<TwilioAnalytics>("/superadmin/twilio/analytics", { period }),
 
   numbers: {
     list: () =>

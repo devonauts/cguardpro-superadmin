@@ -13,6 +13,7 @@ import {
   Phone,
   PhoneCall,
   Bell,
+  BarChart3,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -23,6 +24,7 @@ const NAV = [
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/users", label: "Users", icon: Users },
   { to: "/phone", label: "Teléfono", icon: PhoneCall },
+  { to: "/phone/analytics", label: "Analítica Comms", icon: BarChart3 },
   { to: "/notifications", label: "Notificaciones", icon: Bell },
   { to: "/training/courses", label: "Addon courses", icon: GraduationCap },
   { to: "/training/grants", label: "Course grants", icon: Gift },
