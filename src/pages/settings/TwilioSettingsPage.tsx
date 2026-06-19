@@ -26,7 +26,9 @@ import {
   Wallet,
   ExternalLink,
   AlertTriangle,
+  BarChart3,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataState } from "@/components/ui/DataState";
@@ -101,6 +103,7 @@ function diff(
 }
 
 export default function TwilioSettingsPage() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState<TwilioSettingsMasked | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [loading, setLoading] = useState(true);
@@ -340,6 +343,14 @@ export default function TwilioSettingsPage() {
                     onPress={() => window.open(TWILIO_AUTORECHARGE_URL, "_blank", "noopener")}
                   >
                     Configurar auto-recarga
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    startContent={<BarChart3 className="h-4 w-4" />}
+                    onPress={() => navigate("/phone/analytics")}
+                  >
+                    Ver analítica
                   </Button>
                 </div>
               </CardBody>

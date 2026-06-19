@@ -1,5 +1,6 @@
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { PhoneCall } from "lucide-react";
+import { Card, CardBody, CardHeader, Button } from "@heroui/react";
+import { PhoneCall, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import SmsInbox from "./SmsInbox";
 import Softphone from "./Softphone";
@@ -15,11 +16,17 @@ import Softphone from "./Softphone";
  * (src/lib/socket.ts → the 'superadmin' room, 'twilio:*' events).
  */
 export default function PhoneCenter() {
+  const navigate = useNavigate();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Teléfono"
         subtitle="Centro telefónico de la plataforma — SMS y llamadas de voz en el navegador"
+        actions={
+          <Button size="sm" variant="flat" startContent={<BarChart3 className="h-4 w-4" />} onPress={() => navigate("/phone/analytics")}>
+            Analítica
+          </Button>
+        }
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">

@@ -146,8 +146,34 @@ export interface TwilioAnalytics {
   sms?: { count: number; cost: number };
   calls?: { count: number; minutes: number; cost: number };
   total?: { cost: number };
+  previousCost?: number | null;
   daily?: { date: string; sms: number; calls: number }[];
   error?: string;
+}
+
+export interface TwilioMessageItem {
+  sid: string;
+  direction: string;
+  from: string;
+  to: string;
+  body: string;
+  status: string;
+  segments: number;
+  price: number | null;
+  priceUnit: string;
+  dateSent: string | null;
+}
+
+export interface TwilioCallItem {
+  sid: string;
+  direction: string;
+  from: string;
+  to: string;
+  status: string;
+  durationSec: number;
+  price: number | null;
+  priceUnit: string;
+  startTime: string | null;
 }
 
 // ── Service ─────────────────────────────────────────────────────────────────
@@ -164,6 +190,11 @@ export const twilioService = {
 
   analytics: (period: "thismonth" | "lastmonth" | "today" = "thismonth") =>
     get<TwilioAnalytics>("/superadmin/twilio/analytics", { period }),
+
+  messageLog: (period = "thismonth", limit = 50) =>
+    get<{ ok: boolean; rows?: TwilioMessageItem[]; error?: string }>("/superadmin/twilio/messages/log", { period, limit }),
+  callLog: (period = "thismonth", limit = 50) =>
+    get<{ ok: boolean; rows?: TwilioCallItem[]; error?: string }>("/superadmin/twilio/calls/log", { period, limit }),
 
   numbers: {
     list: () =>
