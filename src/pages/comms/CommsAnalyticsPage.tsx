@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card, CardBody, CardHeader, Button, Spinner, Chip,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import {
   MessageSquare, PhoneCall, DollarSign, RefreshCw, ArrowUp, ArrowDown,
-  ArrowUpRight, ArrowDownLeft,
+  ArrowUpRight, ArrowDownLeft, Download, Target,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
@@ -28,6 +28,24 @@ const money = (n: number | undefined | null, ccy = "USD") => `${ccy} ${(n ?? 0).
 const money4 = (n: number | null, ccy = "USD") => (n == null ? "—" : `${ccy} ${n.toFixed(4)}`);
 const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const peerOf = (dir: string, to: string, from: string) => (/outbound/i.test(dir) ? to : from);
+
+function toCsv(headers: string[], rows: (string | number)[][]): string {
+  const esc = (v: any) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\n");
+}
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function Kpi({ icon, label, value, sub, delta }: {
   icon: React.ReactNode; label: string; value: string; sub?: string;
@@ -104,6 +122,43 @@ export default function CommsAnalyticsPage() {
   const prev = data?.previousCost;
   const delta = prev != null && prev > 0 ? { pct: ((totalCost - prev) / prev) * 100 } : null;
 
+  // Top destinations by spend (peer number = the other party), across SMS + calls.
+  const topDestinations = useMemo(() => {
+    const map: Record<string, { number: string; sms: number; calls: number; cost: number }> = {};
+    const row = (n: string) => (map[n] ||= { number: n, sms: 0, calls: 0, cost: 0 });
+    messages.forEach((m) => {
+      const n = peerOf(m.direction, m.to, m.from);
+      if (!n) return;
+      const e = row(n); e.sms += 1; e.cost += m.price || 0;
+    });
+    calls.forEach((c) => {
+      const n = peerOf(c.direction, c.to, c.from);
+      if (!n) return;
+      const e = row(n); e.calls += 1; e.cost += c.price || 0;
+    });
+    return Object.values(map).sort((a, b) => b.cost - a.cost).slice(0, 10);
+  }, [messages, calls]);
+
+  const exportCsv = useCallback(() => {
+    if (tab === "sms") {
+      downloadCsv(
+        `mensajes-twilio-${period}.csv`,
+        toCsv(
+          ["Fecha", "Dirección", "De", "Para", "Mensaje", "Estado", "Segmentos", "Costo", "Moneda"],
+          messages.map((m) => [fmtTime(m.dateSent), m.direction, m.from, m.to, m.body, m.status, m.segments, m.price ?? "", m.priceUnit || ccy]),
+        ),
+      );
+    } else {
+      downloadCsv(
+        `llamadas-twilio-${period}.csv`,
+        toCsv(
+          ["Fecha", "Dirección", "De", "Para", "Duración(s)", "Estado", "Costo", "Moneda"],
+          calls.map((c) => [fmtTime(c.startTime), c.direction, c.from, c.to, c.durationSec, c.status, c.price ?? "", c.priceUnit || ccy]),
+        ),
+      );
+    }
+  }, [tab, messages, calls, period, ccy]);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -162,6 +217,37 @@ export default function CommsAnalyticsPage() {
             </CardBody>
           </Card>
 
+          {/* Top destinations by spend */}
+          <Card className="shadow-sm">
+            <CardHeader className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Target className="h-4 w-4" /> Top destinos por gasto
+            </CardHeader>
+            <CardBody>
+              {topDestinations.length === 0 ? (
+                <p className="py-6 text-center text-sm text-default-400">Sin actividad en este periodo.</p>
+              ) : (
+                <Table aria-label="Top destinos" removeWrapper>
+                  <TableHeader>
+                    <TableColumn>NÚMERO</TableColumn>
+                    <TableColumn>SMS</TableColumn>
+                    <TableColumn>LLAMADAS</TableColumn>
+                    <TableColumn align="end">GASTO</TableColumn>
+                  </TableHeader>
+                  <TableBody items={topDestinations}>
+                    {(d) => (
+                      <TableRow key={d.number}>
+                        <TableCell className="font-medium">{d.number}</TableCell>
+                        <TableCell className="text-default-500">{d.sms}</TableCell>
+                        <TableCell className="text-default-500">{d.calls}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{money4(d.cost, ccy)}</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardBody>
+          </Card>
+
           {/* Itemized log with per-item price */}
           <Card className="shadow-sm">
             <CardHeader className="flex items-center justify-between">
@@ -175,6 +261,10 @@ export default function CommsAnalyticsPage() {
                   Llamadas ({calls.length})
                 </Button>
               </div>
+              <Button size="sm" variant="flat" startContent={<Download className="h-4 w-4" />}
+                isDisabled={tab === "sms" ? !messages.length : !calls.length} onPress={exportCsv}>
+                Exportar CSV
+              </Button>
             </CardHeader>
             <CardBody>
               {tab === "sms" ? (
