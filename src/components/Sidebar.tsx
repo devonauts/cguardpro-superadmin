@@ -16,6 +16,7 @@ import {
   BarChart3,
   Gauge,
   Server,
+  PlayCircle,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -36,6 +37,7 @@ const NAV = [
   { to: "/audit", label: "Audit log", icon: ScrollText },
   { to: "/settings/stripe", label: "Stripe", icon: Wallet },
   { to: "/settings/twilio", label: "Twilio", icon: Phone },
+  { to: "/demo", label: "Demo Control", icon: PlayCircle },
 ];
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {

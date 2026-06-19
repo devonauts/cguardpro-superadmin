@@ -20,6 +20,7 @@ import CommsAnalyticsPage from "./pages/comms/CommsAnalyticsPage";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import AddonCoursesPage from "./pages/training/AddonCoursesPage";
 import GrantsPage from "./pages/training/GrantsPage";
+import DemoControlPage from "./pages/demo/DemoControlPage";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings/stripe" element={<StripeSettingsPage />} />
         <Route path="settings/twilio" element={<TwilioSettingsPage />} />
+        <Route path="demo" element={<DemoControlPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
