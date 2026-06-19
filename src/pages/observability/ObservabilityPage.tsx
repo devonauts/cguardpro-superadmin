@@ -114,6 +114,9 @@ export default function ObservabilityPage() {
         subtitle="Live system health and database footprint"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="flat" startContent={<Server className="h-4 w-4" />} onPress={() => navigate("/observability/workers")}>
+              Workers
+            </Button>
             <Button size="sm" variant="flat" startContent={<Gauge className="h-4 w-4" />} onPress={() => navigate("/observability/queries")}>
               Consultas DB
             </Button>

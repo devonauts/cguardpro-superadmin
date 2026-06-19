@@ -37,6 +37,18 @@ export interface SlowQueriesResult {
   pid: number; timestamp: string;
 }
 
+export interface WorkerSnapshot {
+  instance: string;
+  pid: number;
+  uptimeSeconds: number;
+  cpuPct: number;
+  mem: { rss: number; heapUsed: number; heapTotal: number; external: number; arrayBuffers: number; other: number };
+  heapLimit: number;
+  heapSpaces: Array<{ name: string; used: number; total: number }>;
+  slow: { totalSlow: number; maxMs: number; captured: number; thresholdMs: number };
+  at: string;
+}
+
 export const observabilityService = {
   health: () => get<HealthReport>("/superadmin/observability/health"),
   stats: () => get<{ tables: TableStat[] }>("/superadmin/observability/stats"),
@@ -48,4 +60,5 @@ export const observabilityService = {
   jobs: () => get<{ jobs: JobStat[]; pid: number; timestamp: string }>("/superadmin/observability/jobs"),
   slowQueries: () => get<SlowQueriesResult>("/superadmin/observability/slow-queries"),
   clearSlowQueries: () => del<{ ok: boolean }>("/superadmin/observability/slow-queries"),
+  workers: () => get<{ redis: boolean; workers: WorkerSnapshot[]; timestamp: string }>("/superadmin/observability/workers"),
 };
