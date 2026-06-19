@@ -13,6 +13,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/react";
+import { useNavigate } from "react-router-dom";
 import {
   RefreshCw,
   Activity,
@@ -23,19 +24,25 @@ import {
   Server,
   CircleCheck,
   CircleX,
+  HardDrive,
+  Boxes,
+  Gauge,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataState } from "@/components/ui/DataState";
-import { observabilityService } from "@/services/observability";
+import { observabilityService, type SystemHealth, type JobStat } from "@/services/observability";
 import { fmtUptime, fmtBytes, fmtDateTime, compactNumber, statusColor } from "@/lib/format";
 import type { HealthReport, TableStat } from "@/types";
 
 const AUTO_REFRESH_MS = 15000;
 
 export default function ObservabilityPage() {
+  const navigate = useNavigate();
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [tables, setTables] = useState<TableStat[] | null>(null);
+  const [system, setSystem] = useState<SystemHealth | null>(null);
+  const [jobs, setJobs] = useState<JobStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +54,17 @@ export default function ObservabilityPage() {
     else setRefreshing(true);
     setError(null);
     try {
-      const [h, s] = await Promise.all([
+      const [h, s, sys, j] = await Promise.all([
         observabilityService.health(),
         observabilityService.stats(),
+        observabilityService.system().catch(() => null),
+        observabilityService.jobs().catch(() => null),
       ]);
       if (!mounted.current) return;
       setHealth(h);
       setTables([...s.tables].sort((a, b) => b.count - a.count));
+      setSystem(sys);
+      setJobs(j?.jobs || []);
     } catch (e: any) {
       if (!mounted.current) return;
       setError(e?.message || "Failed to load observability data.");
@@ -68,8 +79,15 @@ export default function ObservabilityPage() {
   // Lightweight auto-refresh of health only (no loading spinner flash).
   const refreshHealth = useCallback(async () => {
     try {
-      const h = await observabilityService.health();
-      if (mounted.current) setHealth(h);
+      const [h, sys, j] = await Promise.all([
+        observabilityService.health(),
+        observabilityService.system().catch(() => null),
+        observabilityService.jobs().catch(() => null),
+      ]);
+      if (!mounted.current) return;
+      setHealth(h);
+      if (sys) setSystem(sys);
+      if (j) setJobs(j.jobs || []);
     } catch {
       /* errors already toast in the api client; keep last good value */
     }
@@ -95,22 +113,104 @@ export default function ObservabilityPage() {
         title="Observability"
         subtitle="Live system health and database footprint"
         actions={
-          <Button
-            size="sm"
-            variant="flat"
-            color="primary"
-            startContent={<RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />}
-            isLoading={refreshing}
-            onPress={() => load({ spinner: false })}
-          >
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="flat" startContent={<Gauge className="h-4 w-4" />} onPress={() => navigate("/observability/queries")}>
+              Consultas DB
+            </Button>
+            <Button
+              size="sm"
+              variant="flat"
+              color="primary"
+              startContent={<RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />}
+              isLoading={refreshing}
+              onPress={() => load({ spinner: false })}
+            >
+              Refresh
+            </Button>
+          </div>
         }
       />
 
       <DataState loading={loading} error={error} onRetry={load}>
         {health && tables && (
           <div className="flex flex-col gap-6">
+            {/* System resources — RAM (memory-leak watch), storage, CPU */}
+            {system && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="shadow-sm">
+                  <CardBody className="gap-2">
+                    <span className="flex items-center gap-2 text-xs font-medium text-default-500"><MemoryStick className="h-4 w-4" /> RAM del proceso (RSS)</span>
+                    <span className="text-2xl font-bold text-foreground">{fmtBytes(system.process.rss)}</span>
+                    <span className="text-xs text-default-400">Heap {fmtBytes(system.process.heapUsed)} / {fmtBytes(system.process.heapTotal)}</span>
+                    <Progress aria-label="heap" size="sm" value={system.process.heapUsedPct ?? 0} color={(system.process.heapUsedPct ?? 0) > 90 ? "danger" : (system.process.heapUsedPct ?? 0) > 75 ? "warning" : "success"} />
+                  </CardBody>
+                </Card>
+                <Card className="shadow-sm">
+                  <CardBody className="gap-2">
+                    <span className="flex items-center gap-2 text-xs font-medium text-default-500"><Server className="h-4 w-4" /> Memoria del sistema</span>
+                    <span className="text-2xl font-bold text-foreground">{system.memory.usedPct}%</span>
+                    <span className="text-xs text-default-400">{fmtBytes(system.memory.used)} / {fmtBytes(system.memory.total)}</span>
+                    <Progress aria-label="mem" size="sm" value={system.memory.usedPct} color={system.memory.usedPct > 90 ? "danger" : system.memory.usedPct > 75 ? "warning" : "success"} />
+                  </CardBody>
+                </Card>
+                <Card className="shadow-sm">
+                  <CardBody className="gap-2">
+                    <span className="flex items-center gap-2 text-xs font-medium text-default-500"><HardDrive className="h-4 w-4" /> Almacenamiento</span>
+                    {system.disk ? (<>
+                      <span className="text-2xl font-bold text-foreground">{system.disk.usedPct ?? 0}%</span>
+                      <span className="text-xs text-default-400">{fmtBytes(system.disk.used)} / {fmtBytes(system.disk.total)} · libre {fmtBytes(system.disk.free)}</span>
+                      <Progress aria-label="disk" size="sm" value={system.disk.usedPct ?? 0} color={(system.disk.usedPct ?? 0) > 90 ? "danger" : (system.disk.usedPct ?? 0) > 80 ? "warning" : "success"} />
+                    </>) : <span className="text-sm text-default-400">No disponible</span>}
+                  </CardBody>
+                </Card>
+                <Card className="shadow-sm">
+                  <CardBody className="gap-2">
+                    <span className="flex items-center gap-2 text-xs font-medium text-default-500"><Cpu className="h-4 w-4" /> CPU (carga)</span>
+                    <span className="text-2xl font-bold text-foreground">{system.cpu.loadPct}%</span>
+                    <span className="text-xs text-default-400">load {system.cpu.load1.toFixed(2)} · {system.cpu.cores} núcleos</span>
+                    <span className="text-[11px] text-default-400">Uptime proc {fmtUptime(system.process.uptimeSeconds)} · Node {system.process.nodeVersion}</span>
+                  </CardBody>
+                </Card>
+              </div>
+            )}
+
+            {/* Background jobs health */}
+            {jobs.length > 0 && (
+              <Card className="shadow-sm">
+                <CardHeader className="flex items-center gap-2 pb-2">
+                  <Boxes className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Trabajos en segundo plano</h2>
+                  <Chip size="sm" variant="flat">{jobs.length}</Chip>
+                </CardHeader>
+                <CardBody className="pt-0">
+                  <Table aria-label="Jobs" removeWrapper>
+                    <TableHeader>
+                      <TableColumn>JOB</TableColumn>
+                      <TableColumn>ESTADO</TableColumn>
+                      <TableColumn>ÚLTIMA EJECUCIÓN</TableColumn>
+                      <TableColumn>DURACIÓN</TableColumn>
+                      <TableColumn>EJECUCIONES</TableColumn>
+                    </TableHeader>
+                    <TableBody items={jobs}>
+                      {(j) => (
+                        <TableRow key={j.name}>
+                          <TableCell className="font-medium">{j.name}</TableCell>
+                          <TableCell>
+                            <Chip size="sm" variant="flat" color={j.lastStatus === "ok" ? "success" : j.lastStatus === "error" ? "danger" : j.lastStatus === "running" ? "primary" : "default"}>
+                              {j.lastStatus || "sin correr"}
+                            </Chip>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-xs text-default-500">{j.lastRunAt ? fmtDateTime(j.lastRunAt) : "—"}</TableCell>
+                          <TableCell className="text-default-500">{j.lastDurationMs != null ? `${j.lastDurationMs} ms` : "—"}</TableCell>
+                          <TableCell className="text-default-500">{j.runs}{j.errors ? <span className="text-danger"> · {j.errors} err</span> : null}</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardBody>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Health card */}
               <Card className="shadow-sm lg:col-span-2">

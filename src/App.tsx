@@ -10,6 +10,7 @@ import BillingPage from "./pages/billing/BillingPage";
 import TenantBillingDetail from "./pages/billing/TenantBillingDetail";
 import UsersPage from "./pages/users/UsersPage";
 import ObservabilityPage from "./pages/observability/ObservabilityPage";
+import SlowQueriesPage from "./pages/observability/SlowQueriesPage";
 import AuditLogPage from "./pages/audit/AuditLogPage";
 import StripeSettingsPage from "./pages/settings/StripeSettingsPage";
 import TwilioSettingsPage from "./pages/settings/TwilioSettingsPage";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="training/courses" element={<AddonCoursesPage />} />
         <Route path="training/grants" element={<GrantsPage />} />
         <Route path="observability" element={<ObservabilityPage />} />
+        <Route path="observability/queries" element={<SlowQueriesPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings/stripe" element={<StripeSettingsPage />} />
         <Route path="settings/twilio" element={<TwilioSettingsPage />} />
