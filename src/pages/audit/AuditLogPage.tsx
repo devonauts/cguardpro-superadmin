@@ -26,13 +26,26 @@ import { fmtDateTime } from "@/lib/format";
 import type { AuditEntry, Paginated } from "@/types";
 import { AuditDetailsModal } from "./components/AuditDetailsModal";
 
-const COMMON_ACTIONS = [
-  "tenant.create",
-  "tenant.update",
-  "tenant.suspend",
-  "tenant.reactivate",
-  "tenant.delete",
-  "user.setStatus",
+/** Sentinel select value → fetch ALL email.* events via the actionPrefix filter. */
+const EMAIL_ALL = "__email_all__";
+
+const COMMON_ACTIONS: { key: string; label: string }[] = [
+  { key: "tenant.create", label: "tenant.create" },
+  { key: "tenant.update", label: "tenant.update" },
+  { key: "tenant.suspend", label: "tenant.suspend" },
+  { key: "tenant.reactivate", label: "tenant.reactivate" },
+  { key: "tenant.extend_trial", label: "tenant.extend_trial" },
+  { key: "tenant.delete", label: "tenant.delete" },
+  { key: "user.setStatus", label: "user.setStatus" },
+  { key: EMAIL_ALL, label: "✉︎ All email events" },
+  { key: "email.sent", label: "email.sent" },
+  { key: "email.delivered", label: "email.delivered" },
+  { key: "email.open", label: "email.open" },
+  { key: "email.bounce", label: "email.bounce" },
+  { key: "email.dropped", label: "email.dropped" },
+  { key: "email.spamreport", label: "email.spamreport" },
+  { key: "email.skipped", label: "email.skipped" },
+  { key: "email.send_failed", label: "email.send_failed" },
 ];
 
 function statusCodeColor(code: number | null): "success" | "warning" | "danger" | "default" {
@@ -62,7 +75,8 @@ export default function AuditLogPage() {
     setError(null);
     try {
       const res = await observabilityService.audit({
-        action: action || undefined,
+        action: action && action !== EMAIL_ALL ? action : undefined,
+        actionPrefix: action === EMAIL_ALL ? "email." : undefined,
         tenantId: tenantId || undefined,
         actorUserId: actorUserId || undefined,
         page,
@@ -128,7 +142,7 @@ export default function AuditLogPage() {
             }}
           >
             {COMMON_ACTIONS.map((a) => (
-              <SelectItem key={a}>{a}</SelectItem>
+              <SelectItem key={a.key}>{a.label}</SelectItem>
             ))}
           </Select>
           <Input

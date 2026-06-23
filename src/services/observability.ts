@@ -52,7 +52,7 @@ export interface WorkerSnapshot {
 export const observabilityService = {
   health: () => get<HealthReport>("/superadmin/observability/health"),
   stats: () => get<{ tables: TableStat[] }>("/superadmin/observability/stats"),
-  audit: (params: { action?: string; tenantId?: string; actorUserId?: string; page?: number; limit?: number } = {}) =>
+  audit: (params: { action?: string; actionPrefix?: string; tenantId?: string; actorUserId?: string; page?: number; limit?: number } = {}) =>
     get<Paginated<AuditEntry>>("/superadmin/audit", params),
 
   system: () => get<SystemHealth>("/superadmin/observability/system"),
