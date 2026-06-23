@@ -14,11 +14,13 @@ import {
   ModalBody,
   ModalFooter,
   Textarea,
+  Input,
   useDisclosure,
 } from "@heroui/react";
 import {
   ArrowLeft,
   Ban,
+  CalendarPlus,
   Download,
   PlayCircle,
   Trash2,
@@ -66,8 +68,10 @@ export default function TenantDetail() {
 
   const suspendModal = useDisclosure();
   const deleteModal = useDisclosure();
+  const trialModal = useDisclosure();
 
   const [reason, setReason] = useState("");
+  const [trialDays, setTrialDays] = useState(14);
   const [acting, setActing] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -118,6 +122,33 @@ export default function TenantDetail() {
     } finally {
       setActing(false);
     }
+  };
+
+  const doExtendTrial = async () => {
+    if (!Number.isFinite(trialDays) || trialDays <= 0) {
+      toast.error("Enter a number of days (1 or more).");
+      return;
+    }
+    setActing(true);
+    try {
+      await tenantsService.extendTrial(id, { days: trialDays });
+      toast.success(`Trial extended by ${trialDays} day${trialDays === 1 ? "" : "s"}`);
+      trialModal.onClose();
+      setTrialDays(14);
+      load();
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setActing(false);
+    }
+  };
+
+  /** Preview the resulting trial end (mirrors the backend: from the later of now
+      and the current trial end, so a running trial gains time). */
+  const previewTrialEnd = (): Date => {
+    const cur = tenant?.trialEndsAt ? new Date(tenant.trialEndsAt) : null;
+    const base = cur && cur.getTime() > Date.now() ? cur : new Date();
+    return new Date(base.getTime() + (trialDays || 0) * 24 * 60 * 60 * 1000);
   };
 
   const doExport = async () => {
@@ -200,6 +231,15 @@ export default function TenantDetail() {
                       Suspend
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    startContent={<CalendarPlus className="h-4 w-4" />}
+                    onPress={trialModal.onOpen}
+                  >
+                    Extend trial
+                  </Button>
                   <Button
                     size="sm"
                     variant="flat"
@@ -349,6 +389,85 @@ export default function TenantDetail() {
               onPress={doSuspend}
             >
               Suspend
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Extend-trial modal */}
+      <Modal
+        isOpen={trialModal.isOpen}
+        onClose={() => {
+          if (!acting) {
+            setTrialDays(14);
+            trialModal.onClose();
+          }
+        }}
+      >
+        <ModalContent>
+          <ModalHeader>Extend trial</ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-default-500">
+              Add free-trial days for{" "}
+              <span className="font-medium text-foreground">{tenant?.name}</span>.
+              A running trial gains the time; an expired trial is re-opened from
+              today.
+            </p>
+            <div className="flex flex-col gap-1 rounded-lg bg-default-100 p-3 text-sm">
+              <span className="text-default-500">
+                Current trial end:{" "}
+                <span className="text-foreground">
+                  {tenant?.trialEndsAt ? fmtDate(tenant.trialEndsAt) : "—"}
+                </span>
+              </span>
+              <span className="text-default-500">
+                New trial end:{" "}
+                <span className="font-medium text-success-600">
+                  {fmtDate(previewTrialEnd().toISOString())}
+                </span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[7, 14, 30, 60, 90].map((d) => (
+                <Button
+                  key={d}
+                  size="sm"
+                  variant={trialDays === d ? "solid" : "flat"}
+                  color={trialDays === d ? "primary" : "default"}
+                  onPress={() => setTrialDays(d)}
+                >
+                  +{d}d
+                </Button>
+              ))}
+            </div>
+            <Input
+              type="number"
+              label="Days to add"
+              variant="bordered"
+              min={1}
+              max={3650}
+              value={String(trialDays)}
+              onValueChange={(v) => setTrialDays(parseInt(v, 10) || 0)}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              isDisabled={acting}
+              onPress={() => {
+                setTrialDays(14);
+                trialModal.onClose();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isLoading={acting}
+              isDisabled={!Number.isFinite(trialDays) || trialDays <= 0}
+              onPress={doExtendTrial}
+            >
+              Extend trial
             </Button>
           </ModalFooter>
         </ModalContent>

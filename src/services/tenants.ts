@@ -20,6 +20,8 @@ export const tenantsService = {
     post<{ success: boolean }>(`/superadmin/tenants/${id}/suspend`, { reason }),
   reactivate: (id: string) =>
     post<{ success: boolean }>(`/superadmin/tenants/${id}/reactivate`),
+  extendTrial: (id: string, body: { days?: number; until?: string }) =>
+    post<TenantDetail>(`/superadmin/tenants/${id}/extend-trial`, body),
   remove: (id: string) =>
     del<{ success: boolean; recordsDeleted: number; tables: string[] }>(
       `/superadmin/tenants/${id}`,
