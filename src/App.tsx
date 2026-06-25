@@ -18,6 +18,7 @@ import TwilioSettingsPage from "./pages/settings/TwilioSettingsPage";
 import PhoneCenter from "./pages/phone/PhoneCenter";
 import CommsAnalyticsPage from "./pages/comms/CommsAnalyticsPage";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
+import BroadcastPushPage from "./pages/broadcast-push/BroadcastPushPage";
 import AddonCoursesPage from "./pages/training/AddonCoursesPage";
 import GrantsPage from "./pages/training/GrantsPage";
 import DemoControlPage from "./pages/demo/DemoControlPage";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="phone" element={<PhoneCenter />} />
         <Route path="phone/analytics" element={<CommsAnalyticsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="broadcast-push" element={<BroadcastPushPage />} />
         <Route path="training/courses" element={<AddonCoursesPage />} />
         <Route path="training/grants" element={<GrantsPage />} />
         <Route path="observability" element={<ObservabilityPage />} />
