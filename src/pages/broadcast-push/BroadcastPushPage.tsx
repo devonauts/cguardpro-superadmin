@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardBody,
@@ -8,6 +8,8 @@ import {
   Switch,
   Button,
   Chip,
+  Tabs,
+  Tab,
   Modal,
   ModalContent,
   ModalHeader,
@@ -22,6 +24,8 @@ import {
   TriangleAlert,
   Zap,
   RefreshCw,
+  Smartphone,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -33,9 +37,18 @@ import {
 const TITLE_MAX = 80;
 const BODY_MAX = 240;
 
+type Target = "both" | "worker" | "client";
+
+const TARGET_LABEL: Record<Target, string> = {
+  both: "ambas apps",
+  worker: "C-Guard Pro (trabajadores)",
+  client: "Mi Seguridad (clientes)",
+};
+
 export default function BroadcastPushPage() {
   const [audience, setAudience] = useState<BroadcastAudience | null>(null);
   const [loadingAudience, setLoadingAudience] = useState(true);
+  const [target, setTarget] = useState<Target>("both");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [link, setLink] = useState("");
@@ -58,7 +71,21 @@ export default function BroadcastPushPage() {
     void loadAudience();
   }, [loadAudience]);
 
-  const canSend = title.trim().length > 0 && body.trim().length > 0;
+  const targetCount = useMemo(() => {
+    if (!audience) return 0;
+    if (target === "worker") return audience.worker;
+    if (target === "client") return audience.client;
+    return audience.total;
+  }, [audience, target]);
+
+  // Warn only about the transport(s) the chosen target actually uses.
+  const fcmWarn =
+    !!audience && (target === "both" || target === "worker") && !audience.fcmConfigured;
+  const apnsWarn =
+    !!audience && (target === "both" || target === "client") && !audience.apnsConfigured;
+
+  const canSend =
+    title.trim().length > 0 && body.trim().length > 0 && targetCount > 0;
 
   const doSend = useCallback(async () => {
     setSending(true);
@@ -68,19 +95,17 @@ export default function BroadcastPushPage() {
         body: body.trim(),
         link: link.trim() || undefined,
         timeSensitive,
+        app: target === "both" ? undefined : target,
       });
       confirm.onClose();
-      if (res.skipped) {
-        toast.warning(
-          "Push no configurado (FCM) en el backend — no se envió ninguna notificación.",
-        );
-      } else if (res.error) {
+      if (res.error) {
         toast.error("Error al enviar la notificación.");
       } else {
-        toast.success(
-          `Enviado a ${res.sent} dispositivo(s)` +
-            (res.failed ? ` · ${res.failed} fallidos` : ""),
-        );
+        const parts: string[] = [];
+        if (res.fcm?.sent) parts.push(`${res.fcm.sent} FCM`);
+        if (res.apns?.sent) parts.push(`${res.apns.sent} APNs`);
+        const detail = parts.length ? ` (${parts.join(" · ")})` : "";
+        toast.success(`Enviado a ${res.sent} dispositivo(s)${detail}`);
         setTitle("");
         setBody("");
         setLink("");
@@ -92,13 +117,13 @@ export default function BroadcastPushPage() {
     } finally {
       setSending(false);
     }
-  }, [title, body, link, timeSensitive, confirm, loadAudience]);
+  }, [title, body, link, timeSensitive, target, confirm, loadAudience]);
 
   return (
     <div>
       <PageHeader
         title="Broadcast push"
-        subtitle="Envía una notificación push a TODOS los dispositivos registrados de TODOS los tenants. Úsalo con cuidado."
+        subtitle="Envía una notificación a TODOS los dispositivos de TODOS los tenants — elige la app destino. Úsalo con cuidado."
         actions={
           <Button
             size="sm"
@@ -124,6 +149,20 @@ export default function BroadcastPushPage() {
             <h2 className="text-sm font-semibold text-foreground">Mensaje</h2>
           </CardHeader>
           <CardBody className="gap-4">
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-foreground">App destino</p>
+              <Tabs
+                aria-label="App destino"
+                selectedKey={target}
+                onSelectionChange={(k) => setTarget(k as Target)}
+                color="primary"
+                size="sm"
+              >
+                <Tab key="both" title="Ambas apps" />
+                <Tab key="worker" title="C-Guard Pro" />
+                <Tab key="client" title="Mi Seguridad" />
+              </Tabs>
+            </div>
             <Input
               label="Título"
               labelPlacement="outside"
@@ -184,25 +223,50 @@ export default function BroadcastPushPage() {
           <CardBody className="gap-4">
             <div className="rounded-medium border border-primary/20 bg-primary/5 px-4 py-4 text-center">
               <p className="text-3xl font-semibold tabular-nums text-foreground">
-                {loadingAudience ? "—" : (audience?.devices ?? 0).toLocaleString()}
+                {loadingAudience ? "—" : targetCount.toLocaleString()}
               </p>
               <p className="mt-0.5 text-xs text-default-500">
-                dispositivos registrados (todos los tenants)
+                dispositivos · {TARGET_LABEL[target]}
               </p>
-              {audience && audience.uniqueTokens !== audience.devices && (
-                <p className="mt-1 text-[11px] text-default-400">
-                  {audience.uniqueTokens.toLocaleString()} tokens únicos
-                </p>
-              )}
             </div>
 
-            {audience && !audience.configured && (
+            {/* Per-app breakdown */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-default-500">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">C-Guard Pro · FCM</span>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+                  {audience ? audience.worker.toLocaleString() : "—"}
+                </p>
+              </div>
+              <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-default-500">
+                  <Smartphone className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">Mi Seguridad · APNs</span>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+                  {audience ? audience.client.toLocaleString() : "—"}
+                </p>
+              </div>
+            </div>
+
+            {fcmWarn && (
               <div className="flex items-start gap-2 rounded-medium border border-warning/30 bg-warning/5 px-3 py-2.5">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                 <p className="text-xs text-default-600">
-                  FCM no está configurado en el backend
-                  (<span className="font-mono">FIREBASE_SERVICE_ACCOUNT</span>). El
-                  envío no entregará nada hasta configurarlo.
+                  FCM no está configurado — la app de trabajadores (C-Guard Pro) no
+                  recibirá nada.
+                </p>
+              </div>
+            )}
+            {apnsWarn && (
+              <div className="flex items-start gap-2 rounded-medium border border-warning/30 bg-warning/5 px-3 py-2.5">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <p className="text-xs text-default-600">
+                  APNs no está configurado — la app de clientes (Mi Seguridad) no
+                  recibirá nada.
                 </p>
               </div>
             )}
@@ -213,7 +277,7 @@ export default function BroadcastPushPage() {
               isDisabled={!canSend || loadingAudience}
               onPress={confirm.onOpen}
             >
-              Enviar a todos
+              Enviar
             </Button>
             <p className="text-center text-[11px] text-default-400">
               Acción irreversible · se registra en el audit log
@@ -238,9 +302,10 @@ export default function BroadcastPushPage() {
             <p className="text-sm text-default-600">
               Estás por enviar esta notificación a{" "}
               <span className="font-semibold text-foreground">
-                {(audience?.devices ?? 0).toLocaleString()} dispositivos
+                {targetCount.toLocaleString()} dispositivos
               </span>{" "}
-              de todos los tenants. No se puede deshacer.
+              de <span className="font-semibold text-foreground">{TARGET_LABEL[target]}</span>{" "}
+              (todos los tenants). No se puede deshacer.
             </p>
             <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
               <p className="text-sm font-semibold text-foreground">
