@@ -8,6 +8,7 @@ import TenantsList from "./pages/tenants/TenantsList";
 import TenantDetail from "./pages/tenants/TenantDetail";
 import BillingPage from "./pages/billing/BillingPage";
 import TenantBillingDetail from "./pages/billing/TenantBillingDetail";
+import PlansPage from "./pages/plans/PlansPage";
 import UsersPage from "./pages/users/UsersPage";
 import ObservabilityPage from "./pages/observability/ObservabilityPage";
 import SlowQueriesPage from "./pages/observability/SlowQueriesPage";
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="tenants/:id" element={<TenantDetail />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/tenants/:id" element={<TenantBillingDetail />} />
+        <Route path="plans" element={<PlansPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="phone" element={<PhoneCenter />} />
         <Route path="phone/analytics" element={<CommsAnalyticsPage />} />

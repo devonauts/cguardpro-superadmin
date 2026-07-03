@@ -25,6 +25,15 @@ const schema = z.object({
   businessTitle: z.string().trim().min(1, "Business title is required"),
   plan: z.enum(["free", "growth", "enterprise"]),
   timezone: z.string().trim().min(1, "Timezone is required"),
+  // Optional owner invite — provisions the tenant's first admin + invite email.
+  ownerEmail: z
+    .string()
+    .trim()
+    .email("Invalid email")
+    .optional()
+    .or(z.literal("")),
+  ownerFirstName: z.string().trim().optional(),
+  ownerLastName: z.string().trim().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -62,6 +71,9 @@ export function CreateTenantModal({
       businessTitle: "",
       plan: "free",
       timezone: "UTC",
+      ownerEmail: "",
+      ownerFirstName: "",
+      ownerLastName: "",
     },
   });
 
@@ -72,8 +84,21 @@ export function CreateTenantModal({
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const tenant = await tenantsService.create(values);
-      toast.success(`Tenant “${tenant.name}” created`);
+      const { ownerEmail, ownerFirstName, ownerLastName, ...tenantFields } = values;
+      const body: Record<string, any> = { ...tenantFields };
+      if (ownerEmail && ownerEmail.trim()) {
+        body.owner = {
+          email: ownerEmail.trim(),
+          firstName: ownerFirstName?.trim() || null,
+          lastName: ownerLastName?.trim() || null,
+        };
+      }
+      const tenant = await tenantsService.create(body);
+      toast.success(
+        body.owner
+          ? `Tenant “${tenant.name}” created · invite sent to ${body.owner.email}`
+          : `Tenant “${tenant.name}” created`,
+      );
       reset();
       onCreated(tenant);
     } catch {
@@ -175,6 +200,38 @@ export function CreateTenantModal({
                   <SelectItem key={p.key}>{p.label}</SelectItem>
                 ))}
               </Select>
+            </div>
+
+            {/* ── Optional owner invite ── */}
+            <div className="mt-2 rounded-lg border border-default-200 p-4">
+              <div className="mb-1 text-sm font-medium text-foreground">
+                Owner (optional)
+              </div>
+              <p className="mb-3 text-xs text-default-500">
+                Provide an email to provision the tenant’s first admin and send
+                an invitation to set a password. Leave blank to skip.
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  label="Owner email"
+                  type="email"
+                  variant="bordered"
+                  className="sm:col-span-2"
+                  {...register("ownerEmail")}
+                  isInvalid={!!errors.ownerEmail}
+                  errorMessage={errors.ownerEmail?.message}
+                />
+                <Input
+                  label="Owner first name"
+                  variant="bordered"
+                  {...register("ownerFirstName")}
+                />
+                <Input
+                  label="Owner last name"
+                  variant="bordered"
+                  {...register("ownerLastName")}
+                />
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>

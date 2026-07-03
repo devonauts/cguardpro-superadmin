@@ -15,6 +15,9 @@ import {
   ModalFooter,
   Textarea,
   Input,
+  Select,
+  SelectItem,
+  Divider,
   useDisclosure,
 } from "@heroui/react";
 import {
@@ -24,13 +27,16 @@ import {
   Download,
   PlayCircle,
   Trash2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataState } from "@/components/ui/DataState";
 import { DeleteTenantModal } from "./components/DeleteTenantModal";
 import { tenantsService } from "@/services/tenants";
-import type { TenantDetail as TenantDetailType } from "@/types";
+import { plansService } from "@/services/plans";
+import type { TenantDetail as TenantDetailType, PlanCatalog } from "@/types";
 import {
   usd,
   fmtDate,
@@ -63,6 +69,7 @@ export default function TenantDetail() {
   const navigate = useNavigate();
 
   const [tenant, setTenant] = useState<TenantDetailType | null>(null);
+  const [plans, setPlans] = useState<PlanCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +98,53 @@ export default function TenantDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    plansService
+      .list()
+      .then((res) => setPlans(res.plans || []))
+      .catch(() => setPlans([]));
+  }, []);
+
+  const doChangePlan = async (plan: string) => {
+    if (!plan || plan === tenant?.plan) return;
+    setActing(true);
+    try {
+      await tenantsService.changePlan(id, plan);
+      toast.success(`Plan changed to ${plan}`);
+      load();
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const doSetBillingStatus = async (status: string) => {
+    setActing(true);
+    try {
+      await tenantsService.setBillingStatus(id, status);
+      toast.success(`Billing status set to ${status}`);
+      load();
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const doToggleImplementation = async (paid: boolean) => {
+    setActing(true);
+    try {
+      await tenantsService.markImplementation(id, paid);
+      toast.success(paid ? "Implementation marked paid" : "Implementation marked unpaid");
+      load();
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setActing(false);
+    }
+  };
 
   const doSuspend = async () => {
     if (!reason.trim()) {
@@ -333,7 +387,14 @@ export default function TenantDetail() {
 
               {/* ───────────── Billing ───────────── */}
               <Tab key="billing" title="Billing">
-                <BillingTab tenant={tenant} />
+                <BillingTab
+                  tenant={tenant}
+                  plans={plans}
+                  acting={acting}
+                  onChangePlan={doChangePlan}
+                  onSetBillingStatus={doSetBillingStatus}
+                  onToggleImplementation={doToggleImplementation}
+                />
               </Tab>
 
               {/* ───────────── Data ───────────── */}
@@ -485,9 +546,24 @@ export default function TenantDetail() {
 }
 
 // ── Billing tab ──────────────────────────────────────────────────────────────
-function BillingTab({ tenant }: { tenant: TenantDetailType }) {
+function BillingTab({
+  tenant,
+  plans,
+  acting,
+  onChangePlan,
+  onSetBillingStatus,
+  onToggleImplementation,
+}: {
+  tenant: TenantDetailType;
+  plans: PlanCatalog[];
+  acting: boolean;
+  onChangePlan: (plan: string) => void;
+  onSetBillingStatus: (status: string) => void;
+  onToggleImplementation: (paid: boolean) => void;
+}) {
   const b = tenant.billing;
   const q = b.quote;
+  const seatCap = b.plan?.seatCap ?? null;
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card className="shadow-sm">
@@ -516,7 +592,10 @@ function BillingTab({ tenant }: { tenant: TenantDetailType }) {
                     : "—"
               }
             />
-            <Field label="Seats" value={b.seats} />
+            <Field
+              label="Seats"
+              value={seatCap != null ? `${b.seats} / ${seatCap}` : b.seats}
+            />
             <Field label="Trial length" value={`${b.trialDays} days`} />
             <Field
               label="Subscription"
@@ -530,6 +609,20 @@ function BillingTab({ tenant }: { tenant: TenantDetailType }) {
               <Field label="Trial ends" value={fmtDate(tenant.trialEndsAt)} />
             )}
           </div>
+          {b.plan?.features && b.plan.features.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wide text-default-500">
+                Plan features
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {b.plan.features.map((f) => (
+                  <Chip key={f} size="sm" variant="flat">
+                    {f}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
         </CardBody>
       </Card>
 
@@ -547,6 +640,110 @@ function BillingTab({ tenant }: { tenant: TenantDetailType }) {
             value={usd(q.netMonthlyCents)}
             muted
           />
+        </CardBody>
+      </Card>
+
+      {/* ───────────── Manage subscription (superadmin overrides) ───────────── */}
+      <Card className="shadow-sm lg:col-span-2 border border-primary/30">
+        <CardHeader className="text-sm font-semibold">Manage subscription</CardHeader>
+        <CardBody className="gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wide text-default-500">
+                Plan / tier
+              </span>
+              <Select
+                aria-label="Plan"
+                size="sm"
+                selectedKeys={tenant.plan ? [tenant.plan] : []}
+                isDisabled={acting || plans.length === 0}
+                onChange={(e) => onChangePlan(e.target.value)}
+              >
+                {plans.map((p) => (
+                  <SelectItem key={p.key}>
+                    {p.name}
+                    {p.seatCap != null ? ` · cap ${p.seatCap}` : ""}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wide text-default-500">
+                Implementation fee
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={b.implementationPaid ? "solid" : "flat"}
+                  color="success"
+                  isDisabled={acting || b.implementationPaid}
+                  onPress={() => onToggleImplementation(true)}
+                >
+                  Mark paid
+                </Button>
+                <Button
+                  size="sm"
+                  variant={!b.implementationPaid ? "solid" : "flat"}
+                  isDisabled={acting || !b.implementationPaid}
+                  onPress={() => onToggleImplementation(false)}
+                >
+                  Mark unpaid
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Divider />
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-default-500">
+              Billing status override
+            </span>
+            <p className="text-xs text-default-400">
+              Manual override (does not create/cancel a Stripe subscription).
+              Use “Comp active” to grant access to a tenant paying by other means.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                color="success"
+                variant="flat"
+                startContent={<CheckCircle2 className="h-4 w-4" />}
+                isDisabled={acting || b.status === "active"}
+                onPress={() => onSetBillingStatus("active")}
+              >
+                Comp active
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                isDisabled={acting || b.status === "trialing"}
+                onPress={() => onSetBillingStatus("trialing")}
+              >
+                Back to trialing
+              </Button>
+              <Button
+                size="sm"
+                color="warning"
+                variant="flat"
+                isDisabled={acting || b.status === "past_due"}
+                onPress={() => onSetBillingStatus("past_due")}
+              >
+                Mark past due
+              </Button>
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                startContent={<XCircle className="h-4 w-4" />}
+                isDisabled={acting || b.status === "canceled"}
+                onPress={() => onSetBillingStatus("canceled")}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>

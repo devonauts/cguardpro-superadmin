@@ -22,6 +22,12 @@ export const tenantsService = {
     post<{ success: boolean }>(`/superadmin/tenants/${id}/reactivate`),
   extendTrial: (id: string, body: { days?: number; until?: string }) =>
     post<TenantDetail>(`/superadmin/tenants/${id}/extend-trial`, body),
+  setBillingStatus: (id: string, status: string) =>
+    post<TenantDetail>(`/superadmin/tenants/${id}/billing-status`, { status }),
+  markImplementation: (id: string, paid: boolean) =>
+    post<TenantDetail>(`/superadmin/tenants/${id}/implementation`, { paid }),
+  changePlan: (id: string, plan: string) =>
+    put<TenantDetail>(`/superadmin/tenants/${id}/plan`, { plan }),
   remove: (id: string) =>
     del<{ success: boolean; recordsDeleted: number; tables: string[] }>(
       `/superadmin/tenants/${id}`,

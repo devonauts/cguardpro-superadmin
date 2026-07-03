@@ -54,6 +54,15 @@ export interface BillingQuote {
   netMonthlyCents: number;
 }
 
+export interface PlanResolution {
+  key: string | null;
+  name: string | null;
+  features: string[];
+  seatCap: number | null;
+  seatsRemaining: number | null;
+  overLimit: boolean;
+}
+
 export interface BillingSummary {
   status: BillingStatus | string;
   trial: TrialInfo;
@@ -62,6 +71,35 @@ export interface BillingSummary {
   hasSubscription: boolean;
   quote: BillingQuote;
   trialDays: number;
+  plan?: PlanResolution;
+}
+
+// ── Plan catalog ──────────────────────────────────────────────────────────────
+export interface FeatureDef {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export interface PlanCatalog {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  monthlyPerSeatCents: number | null;
+  implementationCents: number | null;
+  seatCap: number | null;
+  features: string[];
+  stripePriceId: string | null;
+  active: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  tenantCount?: number;
+}
+
+export interface PlanCatalogResponse {
+  features: FeatureDef[];
+  plans: PlanCatalog[];
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
