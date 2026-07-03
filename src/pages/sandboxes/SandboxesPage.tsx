@@ -29,6 +29,7 @@ export default function SandboxesPage() {
   const [brandName, setBrandName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerFullName, setOwnerFullName] = useState("");
+  const [clientCount, setClientCount] = useState("20");
   const [sendTo, setSendTo] = useState("");
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<SandboxResult | null>(null);
@@ -44,6 +45,7 @@ export default function SandboxesPage() {
         brandName: brandName.trim(),
         ownerEmail: ownerEmail.trim() || undefined,
         ownerFullName: ownerFullName.trim() || undefined,
+        clientCount: Math.max(1, Math.min(40, parseInt(clientCount, 10) || 20)),
         sendCredentialsTo: sendTo.trim() || undefined,
       });
       setResult(res);
@@ -65,6 +67,7 @@ export default function SandboxesPage() {
     setBrandName("");
     setOwnerEmail("");
     setOwnerFullName("");
+    setClientCount("20");
     setSendTo("");
     setResult(null);
   };
@@ -120,6 +123,16 @@ export default function SandboxesPage() {
               onValueChange={setOwnerFullName}
             />
             <Input
+              label="Número de clientes"
+              type="number"
+              min={1}
+              max={40}
+              variant="bordered"
+              value={clientCount}
+              onValueChange={setClientCount}
+              description="Cada cliente trae su sitio, 2 puestos y 2 guardias (1–40)."
+            />
+            <Input
               label="Enviar credenciales por correo a (opcional)"
               type="email"
               variant="bordered"
@@ -145,9 +158,10 @@ export default function SandboxesPage() {
               )}
             </div>
             <p className="text-xs text-default-400">
-              Cada sandbox es un tenant NUEVO en plan de prueba, con guardias, sitio,
-              horario e historial (rondas, incidentes, visitas). No afecta a ningún
-              cliente real ni al tenant de demo en vivo.
+              Cada sandbox es un tenant NUEVO en plan de prueba, con múltiples clientes
+              —cada uno con su sitio, puestos y guardias— más horario, asistencia en vivo
+              e historial (rondas, incidentes con foto, visitas, radio, relevos). No afecta
+              a ningún cliente real ni al tenant de demo en vivo.
             </p>
           </CardBody>
         </Card>
@@ -190,6 +204,20 @@ export default function SandboxesPage() {
                   <a className="inline-flex items-center gap-1 text-primary hover:underline" href={result.loginUrl} target="_blank" rel="noreferrer">
                     {result.loginUrl} <ExternalLink className="h-3 w-3" />
                   </a>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["Clientes", result.stats?.clients],
+                    ["Guardias", result.stats?.guards],
+                    ["Puestos", result.stats?.stations],
+                    ["En turno", result.stats?.onDutyGuards],
+                    ["Incidentes", result.stats?.incidents],
+                  ].map(([label, val]) => (
+                    <div key={String(label)} className="rounded-medium border border-default-200 bg-default-50 px-3 py-1.5 text-center">
+                      <div className="text-lg font-semibold text-foreground">{val ?? 0}</div>
+                      <div className="text-[11px] text-default-500">{label}</div>
+                    </div>
+                  ))}
                 </div>
                 {result.emailedTo && (
                   result.emailSent ? (
