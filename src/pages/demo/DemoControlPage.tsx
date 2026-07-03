@@ -29,6 +29,11 @@ import {
   Sparkles,
   Lock,
   ClipboardList,
+  MessageSquareQuote,
+  ShieldCheck,
+  Eye,
+  BookOpen,
+  Lightbulb,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -41,6 +46,63 @@ import {
   type DemoLogEntry,
 } from "@/services/demoControl";
 
+/**
+ * Presenter talk-track per demo step. Keyed by the orchestrator's 1-based step
+ * number (schedule→clockin→visitor→patrol→incident→radio→handover→vehiclePatrol).
+ * The goal: any rep can run a tight, pain-anchored demo without improvising.
+ *   say   — first-person line the presenter says to the prospect
+ *   pain  — the customer pain this step kills (the "why it matters")
+ *   watch — the on-screen moment to point at (where the value lands)
+ */
+interface StepScript {
+  say: string;
+  pain: string;
+  watch: string;
+}
+
+const STEP_SCRIPTS: Record<number, StepScript> = {
+  1: {
+    say: "Aquí armo la programación de la semana para todos tus puestos en minutos: arrastro turnos, roto guardias y el sistema cubre los sacafrancos automáticamente.",
+    pain: "Se acaba el Excel de turnos y las llamadas de última hora para tapar un puesto descubierto.",
+    watch: "El calendario llenándose y la cobertura automática de descansos.",
+  },
+  2: {
+    say: "El guardia marca su entrada desde el celular, y solo funciona dentro de la geocerca del puesto. Mira la marcación entrando en vivo.",
+    pain: "Adiós al 'buddy punching' y a las disputas de nómina: la hora es real y georreferenciada.",
+    watch: "La notificación de 'Inicio de turno' apareciendo en el CRM en tiempo real.",
+  },
+  3: {
+    say: "Cuando llega una visita, el guardia la registra en segundos —con foto, motivo y a quién visita— y tu cliente lo ve al instante.",
+    pain: "Reemplaza el cuaderno de recepción: registro digital, auditable y compartible con el cliente.",
+    watch: "La visita apareciendo en el portal del cliente (Mi Seguridad).",
+  },
+  4: {
+    say: "El guardia hace su ronda escaneando los puntos de control. Cada escaneo queda con hora y ubicación exactas.",
+    pain: "Prueba irrefutable de que el guardia sí recorrió el sitio —esto es lo que le muestras a un cliente que reclama.",
+    watch: "Los checkpoints marcándose y la línea de tiempo de la ronda.",
+  },
+  5: {
+    say: "Ocurre un incidente: el guardia lo reporta con foto desde el celular y en ese instante te llega la alerta y se despacha.",
+    pain: "Del evento a tu teléfono en segundos —no te enteras al día siguiente por WhatsApp.",
+    watch: "La alerta de incidente entrando en el CRM, con la foto adjunta.",
+  },
+  6: {
+    say: "Las novedades del turno se pasan por radio y quedan registradas y transcritas automáticamente en el sistema.",
+    pain: "Las novedades dejan de perderse en la memoria del guardia: queda historial buscable.",
+    watch: "La novedad de radio registrada en la bitácora.",
+  },
+  7: {
+    say: "Al terminar el turno, el guardia saliente entrega novedades e instrucciones, y el guardia entrante las recibe automáticamente con acuse de recibo.",
+    pain: "El relevo deja de ser 'lo que alcanzó a contar' —queda documentado y confirmado.",
+    watch: "El pase de turno con las novedades heredadas al siguiente guardia.",
+  },
+  8: {
+    say: "Y aquí está la joya: el supervisor patrulla en vehículo y lo ves moverse EN VIVO en el mapa del Centro de Operaciones.",
+    pain: "Visibilidad total de toda tu operación en tiempo real —esto es lo que tu cliente no consigue con nadie más.",
+    watch: "Abre el Centro de Operaciones en el CRM y deja correr el recorrido. Este es el momento 'wow': haz una pausa y deja que hable la pantalla.",
+  },
+};
+
 export default function DemoControlPage() {
   const [state, setState] = useState<DemoState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +111,8 @@ export default function DemoControlPage() {
   /** Step number currently executing (null when idle). */
   const [runningStep, setRunningStep] = useState<number | null>(null);
   const [resetting, setResetting] = useState(false);
+  /** Presenter script visibility — on by default for live demos, off for setup. */
+  const [showScript, setShowScript] = useState(true);
   const resetDialog = useDisclosure();
   const mounted = useRef(true);
 
@@ -208,27 +272,60 @@ export default function DemoControlPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
               {/* Stepper */}
               <Card className="shadow-sm lg:col-span-3">
-                <CardHeader className="flex items-center justify-between pb-2">
+                <CardHeader className="flex flex-wrap items-center justify-between gap-2 pb-2">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 text-default-400" />
                     <h2 className="text-sm font-semibold text-foreground">Operaciones de la demo</h2>
                   </div>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    endContent={<ChevronRight className="h-4 w-4" />}
-                    isDisabled={nextStep == null || runningStep != null || resetting}
-                    isLoading={nextStep != null && runningStep === nextStep}
-                    onPress={() => nextStep != null && runStep(nextStep)}
-                  >
-                    {allDone ? "Demo completa" : `Siguiente paso (${nextStep})`}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={showScript ? "flat" : "light"}
+                      color={showScript ? "secondary" : "default"}
+                      startContent={<BookOpen className="h-3.5 w-3.5" />}
+                      onPress={() => setShowScript((v) => !v)}
+                    >
+                      {showScript ? "Guion visible" : "Mostrar guion"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="primary"
+                      endContent={<ChevronRight className="h-4 w-4" />}
+                      isDisabled={nextStep == null || runningStep != null || resetting}
+                      isLoading={nextStep != null && runningStep === nextStep}
+                      onPress={() => nextStep != null && runStep(nextStep)}
+                    >
+                      {allDone ? "Demo completa" : `Siguiente paso (${nextStep})`}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardBody className="gap-1 pt-0">
+                  {showScript && (
+                    <div className="mb-3 flex flex-col gap-2 rounded-medium border border-secondary/20 bg-secondary/5 p-3">
+                      <div className="flex items-start gap-2">
+                        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                        <p className="text-xs text-default-600">
+                          <span className="font-semibold text-foreground">Antes de arrancar:</span>{" "}
+                          pregunta por su operación (cuántos guardias, sitios, cómo controlan
+                          asistencia y rondas hoy) y ve nombrando cada dolor mientras muestras cada paso.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MessageSquareQuote className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                        <p className="text-xs text-default-600">
+                          <span className="font-semibold text-foreground">Al cerrar:</span>{" "}
+                          termina con un siguiente paso concreto —“te dejo configurado un piloto con
+                          tus sitios y guardias para el jueves, ¿te parece?”.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {state.steps.map((s, idx) => (
                     <StepRow
                       key={s.step}
                       step={s}
+                      script={STEP_SCRIPTS[s.step]}
+                      showScript={showScript}
                       isNext={s.step === nextStep}
                       isRunning={runningStep === s.step}
                       busy={runningStep != null || resetting}
@@ -304,6 +401,8 @@ export default function DemoControlPage() {
 
 function StepRow({
   step,
+  script,
+  showScript,
   isNext,
   isRunning,
   busy,
@@ -311,6 +410,8 @@ function StepRow({
   onRun,
 }: {
   step: DemoStep;
+  script?: StepScript;
+  showScript: boolean;
   isNext: boolean;
   isRunning: boolean;
   busy: boolean;
@@ -357,6 +458,37 @@ function StepRow({
             )}
           </div>
           <p className="mt-0.5 text-xs text-default-500">{step.description}</p>
+
+          {showScript && script && (
+            <div
+              className={[
+                "mt-2 flex flex-col gap-1.5 rounded-medium border-l-2 px-2.5 py-2",
+                isNext ? "border-primary bg-primary/5" : "border-default-200 bg-default-50/60",
+              ].join(" ")}
+            >
+              <p className="flex items-start gap-1.5 text-xs leading-snug text-foreground">
+                <MessageSquareQuote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  <span className="font-semibold text-primary">Decir: </span>
+                  {script.say}
+                </span>
+              </p>
+              <p className="flex items-start gap-1.5 text-xs leading-snug text-default-600">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                <span>
+                  <span className="font-semibold text-success">Resuelve: </span>
+                  {script.pain}
+                </span>
+              </p>
+              <p className="flex items-start gap-1.5 text-[11px] leading-snug text-default-500">
+                <Eye className="mt-0.5 h-3.5 w-3.5 shrink-0 text-default-400" />
+                <span>
+                  <span className="font-medium">Mostrar: </span>
+                  {script.watch}
+                </span>
+              </p>
+            </div>
+          )}
         </div>
         <Button
           size="sm"
