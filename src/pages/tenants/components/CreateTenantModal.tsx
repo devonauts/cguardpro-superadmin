@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,7 +15,8 @@ import {
 } from "@heroui/react";
 import { toast } from "sonner";
 import { tenantsService } from "@/services/tenants";
-import type { TenantDetail } from "@/types";
+import { plansService } from "@/services/plans";
+import type { TenantDetail, PlanCatalog } from "@/types";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -23,7 +25,7 @@ const schema = z.object({
   address: z.string().trim().min(1, "Address is required"),
   taxNumber: z.string().trim().min(1, "Tax number is required"),
   businessTitle: z.string().trim().min(1, "Business title is required"),
-  plan: z.enum(["free", "growth", "enterprise"]),
+  plan: z.string().trim().min(1, "Plan is required"),
   timezone: z.string().trim().min(1, "Timezone is required"),
   // Optional owner invite — provisions the tenant's first admin + invite email.
   ownerEmail: z
@@ -37,12 +39,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
-const PLANS = [
-  { key: "free", label: "Free" },
-  { key: "growth", label: "Growth" },
-  { key: "enterprise", label: "Enterprise" },
-];
 
 export function CreateTenantModal({
   isOpen,
@@ -69,13 +65,33 @@ export function CreateTenantModal({
       address: "",
       taxNumber: "",
       businessTitle: "",
-      plan: "free",
+      plan: "",
       timezone: "UTC",
       ownerEmail: "",
       ownerFirstName: "",
       ownerLastName: "",
     },
   });
+
+  const [plans, setPlans] = useState<PlanCatalog[]>([]);
+
+  // Load the live catalog when the modal opens; default to the catalog's
+  // default tier (isDefault) so the default is UI-driven, not hardcoded.
+  useEffect(() => {
+    if (!isOpen) return;
+    plansService
+      .list()
+      .then((res) => {
+        const active = (res.plans || []).filter((p) => p.active);
+        setPlans(active);
+        if (!watch("plan")) {
+          const def = active.find((p) => p.isDefault) || active[0];
+          if (def) setValue("plan", def.key, { shouldValidate: false });
+        }
+      })
+      .catch(() => setPlans([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const close = () => {
     reset();
@@ -196,8 +212,11 @@ export function CreateTenantModal({
                 isInvalid={!!errors.plan}
                 errorMessage={errors.plan?.message}
               >
-                {PLANS.map((p) => (
-                  <SelectItem key={p.key}>{p.label}</SelectItem>
+                {plans.map((p) => (
+                  <SelectItem key={p.key}>
+                    {p.name}
+                    {p.seatCap != null ? ` · hasta ${p.seatCap}` : ""}
+                  </SelectItem>
                 ))}
               </Select>
             </div>
