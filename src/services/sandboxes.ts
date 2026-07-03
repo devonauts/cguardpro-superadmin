@@ -14,9 +14,16 @@ export interface SandboxResult {
   loginUrl: string;
   sharedPassword: string;
   accounts: SandboxAccount[];
+  emailedTo?: string | null;
+  emailSent?: boolean;
+  emailError?: string | null;
 }
 
 export const sandboxesService = {
-  create: (body: { brandName: string; ownerEmail?: string; ownerFullName?: string }) =>
-    post<SandboxResult>("/superadmin/sandboxes", body),
+  create: (body: {
+    brandName: string;
+    ownerEmail?: string;
+    ownerFullName?: string;
+    sendCredentialsTo?: string;
+  }) => post<SandboxResult>("/superadmin/sandboxes", body),
 };

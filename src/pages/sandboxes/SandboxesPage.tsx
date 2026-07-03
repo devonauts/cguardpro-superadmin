@@ -13,7 +13,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/react";
-import { Boxes, Copy, ExternalLink, Sparkles, RotateCcw } from "lucide-react";
+import { Boxes, Copy, ExternalLink, Sparkles, RotateCcw, Mail, MailX } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { sandboxesService, type SandboxResult } from "@/services/sandboxes";
@@ -29,6 +29,7 @@ export default function SandboxesPage() {
   const [brandName, setBrandName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerFullName, setOwnerFullName] = useState("");
+  const [sendTo, setSendTo] = useState("");
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<SandboxResult | null>(null);
 
@@ -43,9 +44,16 @@ export default function SandboxesPage() {
         brandName: brandName.trim(),
         ownerEmail: ownerEmail.trim() || undefined,
         ownerFullName: ownerFullName.trim() || undefined,
+        sendCredentialsTo: sendTo.trim() || undefined,
       });
       setResult(res);
-      toast.success(`Sandbox "${res.tenantName}" creado`);
+      if (res.emailedTo && res.emailSent) {
+        toast.success(`Sandbox creado · credenciales enviadas a ${res.emailedTo}`);
+      } else if (res.emailedTo && !res.emailSent) {
+        toast.warning(`Sandbox creado, pero el correo falló (${res.emailError || "error"})`);
+      } else {
+        toast.success(`Sandbox "${res.tenantName}" creado`);
+      }
     } catch {
       /* toast via interceptor */
     } finally {
@@ -57,6 +65,7 @@ export default function SandboxesPage() {
     setBrandName("");
     setOwnerEmail("");
     setOwnerFullName("");
+    setSendTo("");
     setResult(null);
   };
 
@@ -109,6 +118,16 @@ export default function SandboxesPage() {
               variant="bordered"
               value={ownerFullName}
               onValueChange={setOwnerFullName}
+            />
+            <Input
+              label="Enviar credenciales por correo a (opcional)"
+              type="email"
+              variant="bordered"
+              placeholder="prospecto@empresa.com"
+              value={sendTo}
+              onValueChange={setSendTo}
+              startContent={<Mail className="h-4 w-4 text-default-400" />}
+              description="Se envía desde demo@cguardpro.com con el enlace y los accesos."
             />
             <div className="flex gap-2">
               <Button
@@ -172,6 +191,17 @@ export default function SandboxesPage() {
                     {result.loginUrl} <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
+                {result.emailedTo && (
+                  result.emailSent ? (
+                    <Chip color="success" variant="flat" startContent={<Mail className="h-3.5 w-3.5" />}>
+                      Credenciales enviadas a {result.emailedTo}
+                    </Chip>
+                  ) : (
+                    <Chip color="warning" variant="flat" startContent={<MailX className="h-3.5 w-3.5" />}>
+                      No se pudo enviar el correo a {result.emailedTo}
+                    </Chip>
+                  )
+                )}
                 <Table removeWrapper aria-label="Cuentas del sandbox">
                   <TableHeader>
                     <TableColumn>Rol</TableColumn>
