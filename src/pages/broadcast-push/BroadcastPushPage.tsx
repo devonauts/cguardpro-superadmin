@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Smartphone,
   ShieldCheck,
+  UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -37,11 +38,12 @@ import {
 const TITLE_MAX = 80;
 const BODY_MAX = 240;
 
-type Target = "both" | "worker" | "client";
+type Target = "both" | "worker" | "supervisor" | "client";
 
 const TARGET_LABEL: Record<Target, string> = {
-  both: "ambas apps",
+  both: "toda la flota",
   worker: "C-Guard Pro (trabajadores)",
+  supervisor: "C-Guard Pro Supervisor",
   client: "Mi Seguridad (clientes)",
 };
 
@@ -74,13 +76,16 @@ export default function BroadcastPushPage() {
   const targetCount = useMemo(() => {
     if (!audience) return 0;
     if (target === "worker") return audience.worker;
+    if (target === "supervisor") return audience.supervisor;
     if (target === "client") return audience.client;
     return audience.total;
   }, [audience, target]);
 
   // Warn only about the transport(s) the chosen target actually uses.
   const fcmWarn =
-    !!audience && (target === "both" || target === "worker") && !audience.fcmConfigured;
+    !!audience &&
+    (target === "both" || target === "worker" || target === "supervisor") &&
+    !audience.fcmConfigured;
   const apnsWarn =
     !!audience && (target === "both" || target === "client") && !audience.apnsConfigured;
 
@@ -158,8 +163,9 @@ export default function BroadcastPushPage() {
                 color="primary"
                 size="sm"
               >
-                <Tab key="both" title="Ambas apps" />
+                <Tab key="both" title="Toda la flota" />
                 <Tab key="worker" title="C-Guard Pro" />
+                <Tab key="supervisor" title="Supervisor" />
                 <Tab key="client" title="Mi Seguridad" />
               </Tabs>
             </div>
@@ -231,11 +237,11 @@ export default function BroadcastPushPage() {
             </div>
 
             {/* Per-app breakdown */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
                 <div className="flex items-center gap-1.5 text-default-500">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">C-Guard Pro · FCM</span>
+                  <span className="text-[11px]">C-Guard Pro</span>
                 </div>
                 <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
                   {audience ? audience.worker.toLocaleString() : "—"}
@@ -243,8 +249,17 @@ export default function BroadcastPushPage() {
               </div>
               <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
                 <div className="flex items-center gap-1.5 text-default-500">
+                  <UserCog className="h-3.5 w-3.5" />
+                  <span className="text-[11px]">Supervisor</span>
+                </div>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+                  {audience ? audience.supervisor.toLocaleString() : "—"}
+                </p>
+              </div>
+              <div className="rounded-medium border border-default-100 bg-default-50/50 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-default-500">
                   <Smartphone className="h-3.5 w-3.5" />
-                  <span className="text-[11px]">Mi Seguridad · APNs</span>
+                  <span className="text-[11px]">Mi Seguridad</span>
                 </div>
                 <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
                   {audience ? audience.client.toLocaleString() : "—"}

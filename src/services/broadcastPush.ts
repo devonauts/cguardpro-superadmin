@@ -1,12 +1,13 @@
 import { get, post } from "@/lib/api";
 
-/** Which app(s) a broadcast targets. Omit `app` (undefined) to hit both. */
-export type BroadcastApp = "worker" | "client";
+/** Which app(s) a broadcast targets. Omit `app` (undefined) to hit the whole fleet. */
+export type BroadcastApp = "worker" | "supervisor" | "client";
 
 /** Blast radius of a platform-wide push (all tenants), broken down by app + transport. */
 export interface BroadcastAudience {
   total: number;
   worker: number; // C-Guard Pro devices (FCM)
+  supervisor: number; // C-Guard Pro Supervisor devices (FCM)
   client: number; // Mi Seguridad devices (APNs / FCM)
   apns: number; // devices delivered via direct APNs
   fcm: number; // devices delivered via FCM
@@ -30,7 +31,7 @@ export interface BroadcastPushBody {
   body: string;
   link?: string;
   timeSensitive?: boolean;
-  /** 'worker' | 'client' | omit for both apps. */
+  /** 'worker' | 'supervisor' | 'client' | omit for the whole fleet. */
   app?: BroadcastApp;
 }
 
