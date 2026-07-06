@@ -20,6 +20,7 @@ import {
   Gauge,
   Server,
   PlayCircle,
+  Star,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -31,6 +32,7 @@ const NAV = [
   { to: "/plans", label: "Planes", icon: Layers },
   { to: "/sandboxes", label: "Sandboxes", icon: Boxes },
   { to: "/users", label: "Users", icon: Users },
+  { to: "/feedback", label: "App Feedback", icon: Star },
   { to: "/phone", label: "Teléfono", icon: PhoneCall },
   { to: "/phone/analytics", label: "Analítica Comms", icon: BarChart3 },
   { to: "/notifications", label: "Notificaciones", icon: Bell },
