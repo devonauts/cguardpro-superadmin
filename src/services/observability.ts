@@ -112,7 +112,24 @@ export const observabilityService = {
   alerts: () => get<AlertsResult>("/superadmin/observability/alerts"),
   dbTables: () => get<{ tables: DbTable[]; error?: string; timestamp: string }>("/superadmin/observability/db/tables"),
   dbProcessList: () => get<{ processes: DbProcess[]; error?: string; timestamp: string }>("/superadmin/observability/db/processlist"),
+  authEvents: (params?: { minutes?: number; event?: string; outcome?: string; ip?: string; email?: string }) => {
+    const qs = params ? "?" + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)])).toString() : "";
+    return get<AuthEventsResult>(`/superadmin/observability/auth-events${qs}`);
+  },
 };
+
+export interface AuthEvent {
+  id: string; tenantId: string | null; userId: string | null; email: string | null;
+  event: string; outcome: string | null; ip: string | null; userAgent: string | null;
+  deviceId: string | null; platform: string | null; detail: string | null; at: string;
+}
+export interface AuthEventsResult {
+  window: number;
+  rows: AuthEvent[];
+  topFailedIps: { ip: string; count: number }[];
+  topFailedEmails: { email: string; count: number }[];
+  timestamp: string;
+}
 
 export interface DbTable {
   name: string; rowCount: number; dataBytes: number; indexBytes: number; totalBytes: number; freeBytes: number;
