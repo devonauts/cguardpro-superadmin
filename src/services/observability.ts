@@ -1,5 +1,45 @@
-import { get, del } from "@/lib/api";
+import { get, del, post } from "@/lib/api";
 import type { Paginated, HealthReport, TableStat, AuditEntry } from "@/types";
+
+export interface ErrorPattern {
+  fingerprint: string;
+  count: number;
+  name: string | null;
+  message: string | null;
+  route: string | null;
+  statusCode: number | null;
+  source: string | null;
+  tenants: number;
+  resolved: boolean;
+  firstSeen: string;
+  lastSeen: string;
+}
+export interface ErrorEventRow {
+  id: string;
+  fingerprint: string;
+  name: string | null;
+  message: string | null;
+  statusCode: number | null;
+  method: string | null;
+  route: string | null;
+  source: string | null;
+  tenantId: string | null;
+  userId: string | null;
+  ip: string | null;
+  requestId: string | null;
+  pmInstance: string | null;
+  resolved: boolean;
+  createdAt: string;
+}
+export interface ErrorsResult {
+  window: number;
+  total: number;
+  unresolved: number;
+  patterns: ErrorPattern[];
+  recent: ErrorEventRow[];
+  series: { hour: string; count: number }[];
+  timestamp: string;
+}
 
 export interface SystemHealth {
   process: {
@@ -61,4 +101,10 @@ export const observabilityService = {
   slowQueries: () => get<SlowQueriesResult>("/superadmin/observability/slow-queries"),
   clearSlowQueries: () => del<{ ok: boolean }>("/superadmin/observability/slow-queries"),
   workers: () => get<{ redis: boolean; workers: WorkerSnapshot[]; timestamp: string }>("/superadmin/observability/workers"),
+  errors: (params?: { minutes?: number; limit?: number; resolved?: string; q?: string; source?: string; tenantId?: string }) => {
+    const qs = params ? "?" + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)])).toString() : "";
+    return get<ErrorsResult>(`/superadmin/observability/errors${qs}`);
+  },
+  errorDetail: (fingerprint: string) => get<{ fingerprint: string; count: number; occurrences: ErrorEventRow[] }>(`/superadmin/observability/errors/${fingerprint}`),
+  resolveError: (fingerprint: string, resolved: boolean) => post<{ ok: boolean; updated: number }>("/superadmin/observability/errors/resolve", { fingerprint, resolved }),
 };
