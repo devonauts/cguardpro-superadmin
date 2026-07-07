@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/PageHeader";
+import MetricsHistorySection from "./MetricsHistorySection";
 import { DataState } from "@/components/ui/DataState";
 import { observabilityService, type SystemHealth, type JobStat } from "@/services/observability";
 import { fmtUptime, fmtBytes, fmtDateTime, compactNumber, statusColor } from "@/lib/format";
@@ -137,6 +138,7 @@ export default function ObservabilityPage() {
       <DataState loading={loading} error={error} onRetry={load}>
         {health && tables && (
           <div className="flex flex-col gap-6">
+            <MetricsHistorySection />
             {/* System resources — RAM (memory-leak watch), storage, CPU */}
             {system && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

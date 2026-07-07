@@ -108,6 +108,7 @@ export default function SlowQueriesPage() {
             <TableHeader>
               <TableColumn width={90}>TIEMPO</TableColumn>
               <TableColumn width={100}>DURACIÓN</TableColumn>
+              <TableColumn width={200}>RUTA</TableColumn>
               <TableColumn>CONSULTA</TableColumn>
             </TableHeader>
             <TableBody isLoading={loading} loadingContent={<Spinner color="primary" />} emptyContent={`Sin consultas ≥ ${thr}s capturadas en este worker.`} items={slow?.queries || []}>
@@ -115,6 +116,10 @@ export default function SlowQueriesPage() {
                 <TableRow key={`${q.at}-${q.sql.slice(0, 24)}`}>
                   <TableCell className="whitespace-nowrap text-[11px] text-default-500">{new Date(q.at).toLocaleTimeString()}</TableCell>
                   <TableCell><Chip size="sm" variant="flat" color={msColor(q.ms)}>{q.ms} ms</Chip></TableCell>
+                  <TableCell>
+                    <span className="text-[11px] text-default-500">{q.method || ""} {q.route || "—"}</span>
+                    {q.queryNo && q.queryNo > 20 ? <Chip size="sm" variant="flat" color="warning" className="ml-1">N+1? #{q.queryNo}</Chip> : null}
+                  </TableCell>
                   <TableCell><code className="block max-w-[640px] truncate text-xs text-default-600" title={q.sql}>{q.sql}</code></TableCell>
                 </TableRow>
               )}

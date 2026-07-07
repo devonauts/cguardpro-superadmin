@@ -73,7 +73,7 @@ export interface JobStat {
 
 export interface SlowQueriesResult {
   thresholdMs: number; totalSlow: number; maxMs: number; captured: number;
-  queries: Array<{ sql: string; ms: number; at: string }>;
+  queries: Array<{ sql: string; ms: number; at: string; route?: string | null; method?: string | null; tenantId?: string | null; requestId?: string | null; queryNo?: number }>;
   pid: number; timestamp: string;
 }
 
@@ -107,4 +107,27 @@ export const observabilityService = {
   },
   errorDetail: (fingerprint: string) => get<{ fingerprint: string; count: number; occurrences: ErrorEventRow[] }>(`/superadmin/observability/errors/${fingerprint}`),
   resolveError: (fingerprint: string, resolved: boolean) => post<{ ok: boolean; updated: number }>("/superadmin/observability/errors/resolve", { fingerprint, resolved }),
+  systemHistory: (hours = 6) => get<{ hours: number; points: MetricPoint[]; timestamp: string }>(`/superadmin/observability/system/history?hours=${hours}`),
+  alerts: () => get<AlertsResult>("/superadmin/observability/alerts"),
 };
+
+export interface MetricPoint {
+  createdAt: string;
+  hostMemPct: number | null;
+  heapUsedPct: number | null;
+  rss: number | null;
+  loadPct: number | null;
+  diskPct: number | null;
+  dbPoolUsing: number | null;
+  dbPoolWaiting: number | null;
+  dbPoolMax: number | null;
+  slowTotal: number | null;
+  slowMax: number | null;
+  errorCount: number | null;
+  jobErrors: number | null;
+}
+export interface AlertsResult {
+  thresholds: Record<string, number>;
+  recent: Array<{ id: string; type: string; title: string; body: string | null; createdAt: string; isRead: boolean }>;
+  timestamp: string;
+}
