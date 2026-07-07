@@ -105,8 +105,10 @@ export default function ObservabilityPage() {
     };
   }, [load, refreshHealth]);
 
+  // % of the HARD heap ceiling (heap_size_limit), not of heapTotal — the latter
+  // sits ~90% on a healthy process and reads as a false alarm.
   const heapPct = health
-    ? Math.min(100, Math.round((health.memory.heapUsed / Math.max(1, health.memory.heapTotal)) * 100))
+    ? Math.min(100, Math.round((health.memory.heapUsed / Math.max(1, (health.memory as any).heapLimit || health.memory.heapTotal)) * 100))
     : 0;
 
   return (
