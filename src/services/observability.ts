@@ -86,6 +86,7 @@ export interface WorkerSnapshot {
   heapLimit: number;
   heapSpaces: Array<{ name: string; used: number; total: number }>;
   slow: { totalSlow: number; maxMs: number; captured: number; thresholdMs: number };
+  eventLoop?: { meanMs: number; maxMs: number; p99Ms: number };
   at: string;
 }
 
@@ -109,7 +110,17 @@ export const observabilityService = {
   resolveError: (fingerprint: string, resolved: boolean) => post<{ ok: boolean; updated: number }>("/superadmin/observability/errors/resolve", { fingerprint, resolved }),
   systemHistory: (hours = 6) => get<{ hours: number; points: MetricPoint[]; timestamp: string }>(`/superadmin/observability/system/history?hours=${hours}`),
   alerts: () => get<AlertsResult>("/superadmin/observability/alerts"),
+  dbTables: () => get<{ tables: DbTable[]; error?: string; timestamp: string }>("/superadmin/observability/db/tables"),
+  dbProcessList: () => get<{ processes: DbProcess[]; error?: string; timestamp: string }>("/superadmin/observability/db/processlist"),
 };
+
+export interface DbTable {
+  name: string; rowCount: number; dataBytes: number; indexBytes: number; totalBytes: number; freeBytes: number;
+}
+export interface DbProcess {
+  id: number; user: string; host: string; db: string | null; command: string;
+  time: number; state: string | null; info: string | null; longRunning: boolean;
+}
 
 export interface MetricPoint {
   createdAt: string;

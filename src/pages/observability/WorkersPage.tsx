@@ -88,6 +88,11 @@ function WorkerCard({ w }: { w: WorkerSnapshot }) {
           <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Consultas lentas: <b>{w.slow.totalSlow}</b> (máx {w.slow.maxMs}ms)</span>
           <span>Límite heap {fmtBytes(w.heapLimit)}</span>
         </div>
+        {w.eventLoop && (
+          <div className="text-[11px] text-default-500">
+            Event-loop lag: <b className={w.eventLoop.p99Ms > 100 ? "text-danger" : w.eventLoop.p99Ms > 40 ? "text-warning-600" : ""}>{w.eventLoop.meanMs}ms</b> media · p99 {w.eventLoop.p99Ms}ms · máx {w.eventLoop.maxMs}ms
+          </div>
+        )}
       </CardBody>
     </Card>
   );

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { fmtBytes, fmtDateTime } from "@/lib/format";
 import { observabilityService, type SlowQueriesResult, type DbPerformance } from "@/services/observability";
+import DbInspectionSection from "./DbInspectionSection";
 
 function msColor(ms: number): "default" | "warning" | "danger" {
   return ms >= 1000 ? "danger" : ms >= 300 ? "warning" : "default";
@@ -166,6 +167,8 @@ export default function SlowQueriesPage() {
       </Card>
 
       {slow && <p className="text-[11px] text-default-400">Actualizado {fmtDateTime(slow.timestamp)} · worker pid {slow.pid}</p>}
+
+      <DbInspectionSection />
     </div>
   );
 }
