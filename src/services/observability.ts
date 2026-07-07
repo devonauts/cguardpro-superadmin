@@ -124,7 +124,23 @@ export const observabilityService = {
   queues: () => get<QueueStatus>("/superadmin/observability/queues"),
   queuesRetry: () => post<{ retried: number }>("/superadmin/observability/queues/retry", {}),
   queuesDrain: () => post<{ removed: number }>("/superadmin/observability/queues/drain", {}),
+  backups: () => get<BackupStatus>("/superadmin/observability/backups"),
+  runBackup: () => post<BackupStatus>("/superadmin/observability/backups/run", {}),
 };
+
+export interface BackupStatus {
+  ok: boolean | null;
+  at: string | null;
+  file: string | null;
+  sizeBytes: number | null;
+  error: string | null;
+  durationMs: number | null;
+  offsite: boolean;
+  dir: string;
+  keep: number;
+  offsiteConfigured: boolean;
+  recent: Array<{ file: string; sizeBytes: number; at: string }>;
+}
 
 export interface QueueStatus {
   enabled: boolean;
