@@ -61,6 +61,7 @@ export interface DbPerformance {
   digests: Array<{
     sql_text: string; calls: number; avg_s: number; max_s: number; total_s: number;
     rows_examined: number; last_seen: string;
+    examineRatio?: number; fullScan?: boolean;
   }>;
   timestamp: string;
 }
@@ -116,7 +117,16 @@ export const observabilityService = {
     const qs = params ? "?" + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)])).toString() : "";
     return get<AuthEventsResult>(`/superadmin/observability/auth-events${qs}`);
   },
+  lockedAccounts: () => get<{ rows: LockedAccount[]; timestamp: string }>("/superadmin/observability/locked-accounts"),
+  accountAction: (userId: string, action: "lock" | "unlock" | "logout") =>
+    post<{ ok: boolean; action?: string }>("/superadmin/observability/accounts/action", { userId, action }),
+  explain: (sql: string) => post<{ ok: boolean; plan?: any; error?: string }>("/superadmin/observability/explain", { sql }),
 };
+
+export interface LockedAccount {
+  id: string; email: string; firstName: string | null; lastName: string | null;
+  failedLoginCount: number; lockedUntil: string | null; lastLoginAt: string | null;
+}
 
 export interface AuthEvent {
   id: string; tenantId: string | null; userId: string | null; email: string | null;

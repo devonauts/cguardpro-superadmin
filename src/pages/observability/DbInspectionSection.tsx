@@ -1,11 +1,42 @@
 import { useEffect, useState } from "react";
 import {
-  Card, CardBody, Button, Chip, Spinner,
+  Card, CardBody, Button, Chip, Spinner, Textarea,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
 } from "@heroui/react";
-import { Table2, Activity, RefreshCw } from "lucide-react";
+import { Table2, Activity, RefreshCw, Search } from "lucide-react";
+import { toast } from "sonner";
 import { fmtBytes } from "@/lib/format";
 import { observabilityService, type DbTable, type DbProcess } from "@/services/observability";
+
+function ExplainBox() {
+  const [sql, setSql] = useState("");
+  const [plan, setPlan] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (!sql.trim()) return;
+    setBusy(true); setPlan(null);
+    try {
+      const r = await observabilityService.explain(sql);
+      if (r.ok) setPlan(r.plan);
+      else toast.error(r.error || "EXPLAIN falló");
+    } catch { toast.error("EXPLAIN falló"); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Card className="shadow-sm">
+      <CardBody className="gap-2">
+        <h4 className="flex items-center gap-2 text-xs font-medium text-default-500"><Search className="h-4 w-4" /> Explicar consulta (solo SELECT)</h4>
+        <Textarea size="sm" minRows={2} placeholder="SELECT ... (una sola sentencia de lectura)" value={sql} onValueChange={setSql} />
+        <div><Button size="sm" color="primary" variant="flat" isLoading={busy} onPress={run}>Explicar</Button></div>
+        {plan && (
+          <pre className="max-h-72 overflow-auto rounded bg-default-100 p-2 text-[11px] leading-tight text-default-600">
+            {JSON.stringify(plan, null, 2)}
+          </pre>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
 
 export default function DbInspectionSection() {
   const [tables, setTables] = useState<DbTable[]>([]);
@@ -91,6 +122,8 @@ export default function DbInspectionSection() {
               </Table>
             </CardBody>
           </Card>
+
+          <ExplainBox />
         </>
       )}
     </div>

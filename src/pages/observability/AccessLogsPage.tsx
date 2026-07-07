@@ -3,11 +3,69 @@ import {
   Card, CardBody, Button, Chip, Spinner, Input, Select, SelectItem, Switch,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
 } from "@heroui/react";
-import { KeyRound, RefreshCw, ShieldAlert, Search } from "lucide-react";
+import { KeyRound, RefreshCw, ShieldAlert, Search, Lock, Unlock, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { fmtDateTime } from "@/lib/format";
-import { observabilityService, type AuthEventsResult } from "@/services/observability";
+import { observabilityService, type AuthEventsResult, type LockedAccount } from "@/services/observability";
+
+function LockedAccountsPanel() {
+  const [rows, setRows] = useState<LockedAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setRows((await observabilityService.lockedAccounts()).rows || []); }
+    catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const act = async (id: string, action: "lock" | "unlock" | "logout") => {
+    try {
+      await observabilityService.accountAction(id, action);
+      toast.success(action === "unlock" ? "Cuenta desbloqueada" : action === "lock" ? "Cuenta bloqueada" : "Sesiones cerradas");
+      load();
+    } catch { toast.error("No se pudo aplicar la acción"); }
+  };
+  const isLocked = (r: LockedAccount) => !!r.lockedUntil && new Date(r.lockedUntil) > new Date();
+  return (
+    <Card className="shadow-sm">
+      <CardBody className="gap-2">
+        <span className="flex items-center gap-2 text-xs font-medium text-default-500"><Lock className="h-4 w-4" /> Cuentas bloqueadas / con fallos</span>
+        {loading ? <Spinner size="sm" /> : rows.length === 0 ? (
+          <span className="text-xs text-success">Ninguna cuenta bloqueada o con fallos. ✅</span>
+        ) : (
+          <Table removeWrapper aria-label="Cuentas bloqueadas">
+            <TableHeader>
+              <TableColumn>CORREO</TableColumn>
+              <TableColumn>FALLOS</TableColumn>
+              <TableColumn>ESTADO</TableColumn>
+              <TableColumn>ACCIONES</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell><span className="text-xs">{r.email}</span></TableCell>
+                  <TableCell>{r.failedLoginCount}</TableCell>
+                  <TableCell>{isLocked(r)
+                    ? <Chip size="sm" color="danger" variant="flat">Bloqueada</Chip>
+                    : <Chip size="sm" variant="flat">Con fallos</Chip>}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {isLocked(r)
+                        ? <Button size="sm" variant="flat" color="success" startContent={<Unlock className="h-3 w-3" />} onPress={() => act(r.id, "unlock")}>Desbloquear</Button>
+                        : <Button size="sm" variant="flat" startContent={<Lock className="h-3 w-3" />} onPress={() => act(r.id, "lock")}>Bloquear</Button>}
+                      <Button size="sm" variant="light" startContent={<LogOut className="h-3 w-3" />} onPress={() => act(r.id, "logout")}>Cerrar sesiones</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
 
 const WINDOWS = [
   { key: "60", label: "Última hora" },
@@ -94,6 +152,8 @@ export default function AccessLogsPage() {
           </CardBody>
         </Card>
       </div>
+
+      <LockedAccountsPanel />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select label="Ventana" size="sm" className="max-w-[170px]" selectedKeys={[minutes]}

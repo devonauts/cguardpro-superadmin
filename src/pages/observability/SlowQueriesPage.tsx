@@ -152,7 +152,10 @@ export default function SlowQueriesPage() {
               <TableBody emptyContent="Sin patrones ≥ 0.1s." items={dbp?.digests || []}>
                 {(d) => (
                   <TableRow key={d.sql_text + d.calls}>
-                    <TableCell><code className="block max-w-[420px] truncate text-xs text-default-600" title={d.sql_text}>{d.sql_text}</code></TableCell>
+                    <TableCell>
+                      <code className="block max-w-[420px] truncate text-xs text-default-600" title={d.sql_text}>{d.sql_text}</code>
+                      {d.fullScan && <Chip size="sm" variant="flat" color="danger" className="mt-1">Falta índice{d.examineRatio ? ` · exam:env ${d.examineRatio}×` : ""}</Chip>}
+                    </TableCell>
                     <TableCell className="text-default-500">{d.calls}</TableCell>
                     <TableCell><Chip size="sm" variant="flat" color={msColor(d.avg_s * 1000)}>{(d.avg_s).toFixed(3)}s</Chip></TableCell>
                     <TableCell className="text-default-500">{(d.max_s).toFixed(3)}s</TableCell>
