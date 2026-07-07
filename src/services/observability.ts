@@ -135,10 +135,11 @@ export interface BackupStatus {
   sizeBytes: number | null;
   error: string | null;
   durationMs: number | null;
-  offsite: boolean;
+  mirrored: boolean;
   dir: string;
   keep: number;
-  offsiteConfigured: boolean;
+  mirrorDir: string | null;
+  mirrorConfigured: boolean;
   recent: Array<{ file: string; sizeBytes: number; at: string }>;
 }
 

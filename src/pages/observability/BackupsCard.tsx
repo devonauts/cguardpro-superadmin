@@ -43,9 +43,9 @@ export default function BackupsCard() {
                 : <Chip size="sm" color={stale ? "warning" : "success"} variant="flat">
                     Última: {fmtDateTime(data.recent[0].at)} · {fmtBytes(data.recent[0].sizeBytes)}
                   </Chip>}
-              <Chip size="sm" variant="flat" startContent={data.offsiteConfigured ? <Cloud className="h-3 w-3" /> : <CloudOff className="h-3 w-3" />}
-                color={data.offsiteConfigured ? "success" : "default"}>
-                {data.offsiteConfigured ? "Off-box (S3) activo" : "Solo local — configura S3"}
+              <Chip size="sm" variant="flat" startContent={data.mirrorConfigured ? <Cloud className="h-3 w-3" /> : <CloudOff className="h-3 w-3" />}
+                color={data.mirrorConfigured ? "success" : "default"}>
+                {data.mirrorConfigured ? "Copia en 2º disco activa" : "Solo un disco"}
               </Chip>
               <Chip size="sm" variant="flat">Retiene {data.keep}</Chip>
             </div>
@@ -60,7 +60,7 @@ export default function BackupsCard() {
                 ))}
               </div>
             )}
-            <p className="text-[11px] text-default-400">Directorio: <code>{data.dir}</code>. {!data.offsiteConfigured && "Para protección ante pérdida del servidor, define BACKUP_S3_BUCKET + AWS_* para copia off-box."}</p>
+            <p className="text-[11px] text-default-400">Directorio: <code>{data.dir}</code>. {!data.mirrorConfigured && "Opcional: define BACKUP_MIRROR_DIR (un 2º disco/montaje local) para una copia extra ante fallo de disco."}</p>
           </>
         )}
       </CardBody>
