@@ -121,7 +121,20 @@ export const observabilityService = {
   accountAction: (userId: string, action: "lock" | "unlock" | "logout") =>
     post<{ ok: boolean; action?: string }>("/superadmin/observability/accounts/action", { userId, action }),
   explain: (sql: string) => post<{ ok: boolean; plan?: any; error?: string }>("/superadmin/observability/explain", { sql }),
+  queues: () => get<QueueStatus>("/superadmin/observability/queues"),
+  queuesRetry: () => post<{ retried: number }>("/superadmin/observability/queues/retry", {}),
+  queuesDrain: () => post<{ removed: number }>("/superadmin/observability/queues/drain", {}),
 };
+
+export interface QueueStatus {
+  enabled: boolean;
+  name?: string;
+  paused?: boolean;
+  error?: string;
+  counts: { waiting: number; active: number; completed: number; failed: number; delayed: number; paused: number } | null;
+  failed: Array<{ id: string; name: string; failedReason: string; attemptsMade: number; timestamp: number }>;
+  timestamp: string;
+}
 
 export interface LockedAccount {
   id: string; email: string; firstName: string | null; lastName: string | null;

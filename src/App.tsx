@@ -16,6 +16,7 @@ import SlowQueriesPage from "./pages/observability/SlowQueriesPage";
 import WorkersPage from "./pages/observability/WorkersPage";
 import ErrorsPage from "./pages/observability/ErrorsPage";
 import AccessLogsPage from "./pages/observability/AccessLogsPage";
+import QueuesPage from "./pages/observability/QueuesPage";
 import AuditLogPage from "./pages/audit/AuditLogPage";
 import StripeSettingsPage from "./pages/settings/StripeSettingsPage";
 import TwilioSettingsPage from "./pages/settings/TwilioSettingsPage";
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="observability/workers" element={<WorkersPage />} />
         <Route path="observability/errors" element={<ErrorsPage />} />
         <Route path="observability/access" element={<AccessLogsPage />} />
+        <Route path="observability/queues" element={<QueuesPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings/stripe" element={<StripeSettingsPage />} />
         <Route path="settings/twilio" element={<TwilioSettingsPage />} />
