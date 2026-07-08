@@ -590,6 +590,7 @@ export default function TwilioSettingsPage() {
                       : 'No numbers loaded. Click "Load numbers".'}
                   </p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table aria-label="Twilio incoming numbers" removeWrapper>
                     <TableHeader>
                       <TableColumn>NUMBER</TableColumn>
@@ -654,6 +655,7 @@ export default function TwilioSettingsPage() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardBody>
             </Card>

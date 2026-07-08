@@ -226,6 +226,7 @@ export default function CommsAnalyticsPage() {
               {topDestinations.length === 0 ? (
                 <p className="py-6 text-center text-sm text-default-400">Sin actividad en este periodo.</p>
               ) : (
+                <div className="overflow-x-auto">
                 <Table aria-label="Top destinos" removeWrapper>
                   <TableHeader>
                     <TableColumn>NÚMERO</TableColumn>
@@ -244,6 +245,7 @@ export default function CommsAnalyticsPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardBody>
           </Card>
@@ -268,6 +270,7 @@ export default function CommsAnalyticsPage() {
             </CardHeader>
             <CardBody>
               {tab === "sms" ? (
+                <div className="overflow-x-auto">
                 <Table aria-label="Mensajes" removeWrapper isHeaderSticky className="max-h-[440px] overflow-auto">
                   <TableHeader>
                     <TableColumn>FECHA</TableColumn>
@@ -293,7 +296,9 @@ export default function CommsAnalyticsPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
+                <div className="overflow-x-auto">
                 <Table aria-label="Llamadas" removeWrapper isHeaderSticky className="max-h-[440px] overflow-auto">
                   <TableHeader>
                     <TableColumn>FECHA</TableColumn>
@@ -319,6 +324,7 @@ export default function CommsAnalyticsPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardBody>
           </Card>

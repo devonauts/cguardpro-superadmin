@@ -85,6 +85,7 @@ export default function GrantsPage() {
         emptyLabel="No grants yet. Grant an addon course to a tenant to get started."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table aria-label="Course grants" isCompact removeWrapper>
           <TableHeader>
             <TableColumn>COURSE</TableColumn>
@@ -124,6 +125,7 @@ export default function GrantsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {totalPages > 1 && (
           <div className="flex justify-center pt-3">

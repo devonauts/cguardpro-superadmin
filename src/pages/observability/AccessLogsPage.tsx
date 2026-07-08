@@ -34,6 +34,7 @@ function LockedAccountsPanel() {
         {loading ? <Spinner size="sm" /> : rows.length === 0 ? (
           <span className="text-xs text-success">Ninguna cuenta bloqueada o con fallos. ✅</span>
         ) : (
+          <div className="overflow-x-auto">
           <Table removeWrapper aria-label="Cuentas bloqueadas">
             <TableHeader>
               <TableColumn>CORREO</TableColumn>
@@ -61,6 +62,7 @@ function LockedAccountsPanel() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardBody>
     </Card>
@@ -173,6 +175,7 @@ export default function AccessLogsPage() {
           {loading && !data ? (
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : (
+            <div className="overflow-x-auto">
             <Table removeWrapper aria-label="Eventos de acceso" isHeaderSticky classNames={{ base: "max-h-[560px] overflow-auto" }}>
               <TableHeader>
                 <TableColumn>HORA</TableColumn>
@@ -195,6 +198,7 @@ export default function AccessLogsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardBody>
       </Card>

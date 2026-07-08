@@ -139,6 +139,7 @@ export default function FeedbackList() {
       >
         <Card className="shadow-sm">
           <CardBody className="p-0">
+            <div className="overflow-x-auto">
             <Table
               aria-label="App feedback"
               removeWrapper
@@ -172,6 +173,7 @@ export default function FeedbackList() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardBody>
         </Card>
       </DataState>

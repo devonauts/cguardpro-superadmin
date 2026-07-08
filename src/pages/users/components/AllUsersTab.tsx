@@ -139,6 +139,7 @@ export function AllUsersTab() {
         emptyLabel="No users match your filters."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table aria-label="All platform users" isCompact removeWrapper>
           <TableHeader>
             <TableColumn>NAME</TableColumn>
@@ -221,6 +222,7 @@ export function AllUsersTab() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {data && data.totalPages > 1 && (
           <div className="flex justify-center pt-2">

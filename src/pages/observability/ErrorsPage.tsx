@@ -148,6 +148,7 @@ export default function ErrorsPage() {
           <Card className="shadow-sm">
             <CardBody>
               <h3 className="mb-3 text-sm font-semibold">Patrones principales</h3>
+              <div className="overflow-x-auto">
               <Table removeWrapper aria-label="Patrones de error">
                 <TableHeader>
                   <TableColumn>ERROR</TableColumn>
@@ -189,12 +190,14 @@ export default function ErrorsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardBody>
           </Card>
 
           <Card className="shadow-sm">
             <CardBody>
               <h3 className="mb-3 text-sm font-semibold">Errores recientes</h3>
+              <div className="overflow-x-auto">
               <Table removeWrapper aria-label="Errores recientes">
                 <TableHeader>
                   <TableColumn>HORA</TableColumn>
@@ -217,6 +220,7 @@ export default function ErrorsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardBody>
           </Card>
         </>

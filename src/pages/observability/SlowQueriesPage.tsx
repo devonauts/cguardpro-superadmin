@@ -105,6 +105,7 @@ export default function SlowQueriesPage() {
           <Button size="sm" variant="flat" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={clear}>Vaciar</Button>
         </CardHeader>
         <CardBody>
+          <div className="overflow-x-auto">
           <Table aria-label="Consultas lentas" removeWrapper isHeaderSticky className="max-h-[460px] overflow-auto">
             <TableHeader>
               <TableColumn width={90}>TIEMPO</TableColumn>
@@ -126,6 +127,7 @@ export default function SlowQueriesPage() {
               )}
             </TableBody>
           </Table>
+          </div>
           <p className="mt-2 text-[11px] text-default-400">
             Captura por worker de PM2 (cada uno tiene su propio buffer; ves el del worker que atendió esta petición).
             Configurable con <code>SLOW_QUERY_MS</code>.
@@ -140,6 +142,7 @@ export default function SlowQueriesPage() {
           {dbp && !dbp.perfSchema ? (
             <p className="py-6 text-center text-sm text-default-400">performance_schema deshabilitado en MySQL — no hay agregados disponibles.</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table aria-label="Patrones lentos" removeWrapper isHeaderSticky className="max-h-[460px] overflow-auto">
               <TableHeader>
                 <TableColumn>CONSULTA (DIGEST)</TableColumn>
@@ -165,6 +168,7 @@ export default function SlowQueriesPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardBody>
       </Card>

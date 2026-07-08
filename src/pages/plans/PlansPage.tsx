@@ -199,6 +199,7 @@ export default function PlansPage() {
       <DataState loading={loading} error={error} onRetry={load}>
         <Card className="shadow-sm">
           <CardBody>
+            <div className="overflow-x-auto">
             <Table removeWrapper aria-label="Plans">
               <TableHeader>
                 <TableColumn>Plan</TableColumn>
@@ -280,6 +281,7 @@ export default function PlansPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardBody>
         </Card>
       </DataState>

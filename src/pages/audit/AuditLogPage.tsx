@@ -203,6 +203,7 @@ export default function AuditLogPage() {
         {data && rows.length > 0 && (
           <Card className="shadow-sm">
             <CardBody className="pt-2">
+              <div className="overflow-x-auto">
               <Table
                 removeWrapper
                 aria-label="Audit log"
@@ -301,6 +302,7 @@ export default function AuditLogPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
 
               {data.totalPages > 1 && (
                 <div className="flex items-center justify-between gap-3 pt-4">

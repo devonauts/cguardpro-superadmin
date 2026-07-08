@@ -230,6 +230,7 @@ export default function SandboxesPage() {
                     </Chip>
                   )
                 )}
+                <div className="overflow-x-auto">
                 <Table removeWrapper aria-label="Cuentas del sandbox">
                   <TableHeader>
                     <TableColumn>Rol</TableColumn>
@@ -258,6 +259,7 @@ export default function SandboxesPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </CardBody>

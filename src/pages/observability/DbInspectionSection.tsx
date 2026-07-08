@@ -72,6 +72,7 @@ export default function DbInspectionSection() {
           <Card className="shadow-sm">
             <CardBody>
               <h4 className="mb-2 text-xs font-medium text-default-500">Tablas por tamaño (datos + índices)</h4>
+              <div className="overflow-x-auto">
               <Table removeWrapper aria-label="Tablas" isHeaderSticky classNames={{ base: "max-h-[360px] overflow-auto" }}>
                 <TableHeader>
                   <TableColumn>TABLA</TableColumn>
@@ -92,6 +93,7 @@ export default function DbInspectionSection() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardBody>
           </Card>
 
@@ -100,6 +102,7 @@ export default function DbInspectionSection() {
               <h4 className="mb-2 flex items-center gap-2 text-xs font-medium text-default-500">
                 <Activity className="h-4 w-4" /> Conexiones activas (no inactivas)
               </h4>
+              <div className="overflow-x-auto">
               <Table removeWrapper aria-label="Process list">
                 <TableHeader>
                   <TableColumn>ID</TableColumn>
@@ -120,6 +123,7 @@ export default function DbInspectionSection() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardBody>
           </Card>
 

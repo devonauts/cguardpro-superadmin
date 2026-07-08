@@ -201,6 +201,7 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardBody className="pt-0">
+                <div className="overflow-x-auto">
                 <Table
                   removeWrapper
                   aria-label="Recent tenants"
@@ -268,6 +269,7 @@ export default function Dashboard() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardBody>
             </Card>
           </div>

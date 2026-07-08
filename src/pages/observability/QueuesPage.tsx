@@ -95,6 +95,7 @@ export default function QueuesPage() {
                   <Button size="sm" variant="flat" color="danger" startContent={<Trash2 className="h-4 w-4" />} isDisabled={!c?.failed} onPress={drain}>Vaciar fallidos</Button>
                 </div>
               </div>
+              <div className="overflow-x-auto">
               <Table removeWrapper aria-label="Trabajos fallidos">
                 <TableHeader>
                   <TableColumn>TRABAJO</TableColumn>
@@ -113,6 +114,7 @@ export default function QueuesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardBody>
           </Card>
         </>

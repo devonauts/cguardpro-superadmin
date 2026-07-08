@@ -313,6 +313,7 @@ function TenantsTab() {
         emptyLabel="No tenants match these filters."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table
           removeWrapper
           aria-label="Tenant billing"
@@ -374,6 +375,7 @@ function TenantsTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
 
         <PaginationBar data={data} page={page} onChange={setPage} loading={loading} />
       </DataState>
@@ -454,6 +456,7 @@ function InvoicesTab() {
         emptyLabel="No invoices match these filters."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table
           removeWrapper
           aria-label="Invoices"
@@ -499,6 +502,7 @@ function InvoicesTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
 
         <PaginationBar data={data} page={page} onChange={setPage} loading={loading} />
       </DataState>

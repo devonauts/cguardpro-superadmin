@@ -231,6 +231,7 @@ export default function TenantBillingDetail() {
                     No invoices for this tenant.
                   </p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table
                     removeWrapper
                     aria-label="Tenant invoices"
@@ -283,6 +284,7 @@ export default function TenantBillingDetail() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardBody>
             </Card>

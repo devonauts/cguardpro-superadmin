@@ -192,6 +192,7 @@ export default function ObservabilityPage() {
                   <Chip size="sm" variant="flat">{jobs.length}</Chip>
                 </CardHeader>
                 <CardBody className="pt-0">
+                  <div className="overflow-x-auto">
                   <Table aria-label="Jobs" removeWrapper>
                     <TableHeader>
                       <TableColumn>JOB</TableColumn>
@@ -216,6 +217,7 @@ export default function ObservabilityPage() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardBody>
               </Card>
             )}
@@ -336,6 +338,7 @@ export default function ObservabilityPage() {
                   </Chip>
                 </CardHeader>
                 <CardBody className="pt-0">
+                  <div className="overflow-x-auto">
                   <Table
                     removeWrapper
                     aria-label="Database table row counts"
@@ -360,6 +363,7 @@ export default function ObservabilityPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardBody>
               </Card>
             </div>

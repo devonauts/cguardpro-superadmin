@@ -198,6 +198,7 @@ export default function TenantsList() {
       >
         <Card className="shadow-sm">
           <CardBody className="p-0">
+            <div className="overflow-x-auto">
             <Table
               aria-label="Tenants"
               removeWrapper
@@ -290,6 +291,7 @@ export default function TenantsList() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardBody>
         </Card>
       </DataState>

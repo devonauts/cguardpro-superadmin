@@ -141,6 +141,7 @@ export default function NotificationsPage() {
         </div>
       </div>
 
+      <div className="overflow-x-auto">
       <Table
         aria-label="Notificaciones"
         removeWrapper
@@ -202,6 +203,7 @@ export default function NotificationsPage() {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

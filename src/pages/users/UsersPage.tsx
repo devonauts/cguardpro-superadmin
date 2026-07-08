@@ -162,6 +162,7 @@ function StaffTab() {
         emptyLabel="No staff users match your filters."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table aria-label="Staff users" isCompact removeWrapper>
           <TableHeader>
             <TableColumn>NAME</TableColumn>
@@ -217,6 +218,7 @@ function StaffTab() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {data && data.totalPages > 1 && (
           <div className="flex justify-center pt-2">
@@ -347,6 +349,7 @@ function GuardsTab() {
         emptyLabel="No guards match your search."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table aria-label="Security guards" isCompact removeWrapper>
           <TableHeader>
             <TableColumn>NAME</TableColumn>
@@ -381,6 +384,7 @@ function GuardsTab() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {data && data.totalPages > 1 && (
           <div className="flex justify-center pt-2">

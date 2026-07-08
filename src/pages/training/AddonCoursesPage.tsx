@@ -83,6 +83,7 @@ export default function AddonCoursesPage() {
         emptyLabel="No addon courses yet. Create one to build the platform catalog."
         onRetry={load}
       >
+        <div className="overflow-x-auto">
         <Table aria-label="Addon courses" isCompact removeWrapper>
           <TableHeader>
             <TableColumn>TITLE</TableColumn>
@@ -142,6 +143,7 @@ export default function AddonCoursesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {totalPages > 1 && (
           <div className="flex justify-center pt-3">
