@@ -24,6 +24,12 @@ export interface StripeTestResult {
   error?: string;
 }
 
+export interface WebhookRegisterResult {
+  ok: boolean;
+  endpointId?: string;
+  error?: string;
+}
+
 export const settingsService = {
   stripe: {
     get: () => get<StripeSettings>("/superadmin/settings/stripe"),
@@ -31,5 +37,8 @@ export const settingsService = {
       put<StripeSettings>("/superadmin/settings/stripe", body),
     test: (mode: "test" | "live") =>
       post<StripeTestResult>("/superadmin/settings/stripe/test", { mode }),
+    /** Creates the webhook endpoint in Stripe and stores its signing secret. */
+    registerWebhook: (mode: "test" | "live") =>
+      post<WebhookRegisterResult>("/superadmin/settings/stripe/webhook", { mode }),
   },
 };

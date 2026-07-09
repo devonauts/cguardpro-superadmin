@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardBody, CardFooter, Input, Button, Chip } from "@heroui/react";
-import { PlugZap } from "lucide-react";
+import { PlugZap, Webhook } from "lucide-react";
 import type { StripeModeConfig } from "@/types";
 
 /** Editable draft for one Stripe mode. Secret fields hold ONLY what the user
@@ -21,6 +21,8 @@ export function StripeModeCard({
   onChange,
   onTest,
   testing,
+  onRegisterWebhook,
+  registering,
 }: {
   mode: "test" | "live";
   title: string;
@@ -30,6 +32,8 @@ export function StripeModeCard({
   onChange: (patch: Partial<ModeDraft>) => void;
   onTest: () => void;
   testing: boolean;
+  onRegisterWebhook?: () => void;
+  registering?: boolean;
 }) {
   const secretPlaceholder = config.secretKeyConfigured
     ? `•••• ${config.secretKeyLast4 ?? "????"} (saved — leave blank to keep)`
@@ -115,7 +119,23 @@ export function StripeModeCard({
         </div>
       </CardBody>
 
-      <CardFooter className="justify-end">
+      <CardFooter className="justify-between gap-2">
+        {onRegisterWebhook ? (
+          <Button
+            size="sm"
+            variant="flat"
+            color={config.webhookSecretConfigured ? "default" : "warning"}
+            startContent={<Webhook className="h-4 w-4" />}
+            isLoading={registering}
+            isDisabled={!config.secretKeyConfigured}
+            onPress={onRegisterWebhook}
+            title="Creates the webhook endpoint in Stripe and saves its signing secret. Without it, payments don't update tenant status."
+          >
+            {config.webhookSecretConfigured ? "Re-register webhook" : "Register webhook"}
+          </Button>
+        ) : (
+          <span />
+        )}
         <Button
           size="sm"
           variant="flat"

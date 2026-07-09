@@ -76,6 +76,7 @@ export default function StripeSettingsPage() {
 
   const [saving, setSaving] = useState(false);
   const [testingMode, setTestingMode] = useState<"test" | "live" | null>(null);
+  const [registeringMode, setRegisteringMode] = useState<"test" | "live" | null>(null);
 
   const hydrate = useCallback((s: StripeSettings) => {
     setSettings(s);
@@ -152,6 +153,25 @@ export default function StripeSettingsPage() {
       /* toast via interceptor */
     } finally {
       setTestingMode(null);
+    }
+  };
+
+  // Creates the webhook endpoint in Stripe and stores its signing secret —
+  // without this, payments succeed but tenant statuses never update.
+  const onRegisterWebhook = async (m: "test" | "live") => {
+    setRegisteringMode(m);
+    try {
+      const res = await settingsService.stripe.registerWebhook(m);
+      if (res.ok) {
+        toast.success(`Webhook registered in Stripe (${res.endpointId}) and signing secret saved`);
+        load();
+      } else {
+        toast.error(res.error || "Webhook registration failed");
+      }
+    } catch {
+      /* toast via interceptor */
+    } finally {
+      setRegisteringMode(null);
     }
   };
 
@@ -246,6 +266,8 @@ export default function StripeSettingsPage() {
                 }
                 onTest={() => onTest("test")}
                 testing={testingMode === "test"}
+                onRegisterWebhook={() => onRegisterWebhook("test")}
+                registering={registeringMode === "test"}
               />
               <StripeModeCard
                 mode="live"
@@ -258,6 +280,8 @@ export default function StripeSettingsPage() {
                 }
                 onTest={() => onTest("live")}
                 testing={testingMode === "live"}
+                onRegisterWebhook={() => onRegisterWebhook("live")}
+                registering={registeringMode === "live"}
               />
             </div>
 

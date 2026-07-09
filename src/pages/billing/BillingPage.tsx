@@ -35,7 +35,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { DataState } from "@/components/ui/DataState";
-import { billingService } from "@/services/billing";
+import { billingService, type PlatformPaymentRow } from "@/services/billing";
 import {
   usd,
   usdFromDollars,
@@ -219,14 +219,17 @@ export default function BillingPage() {
               </Card>
             </div>
 
-            {/* Tabs: tenants / invoices */}
+            {/* Tabs: tenants / payments / invoices */}
             <Card className="shadow-sm">
               <CardBody>
                 <Tabs aria-label="Billing tables" color="primary" variant="underlined">
                   <Tab key="tenants" title="Tenants">
                     <TenantsTab />
                   </Tab>
-                  <Tab key="invoices" title="Invoices">
+                  <Tab key="payments" title="Stripe payments">
+                    <PaymentsTab />
+                  </Tab>
+                  <Tab key="invoices" title="Client invoices">
                     <InvoicesTab />
                   </Tab>
                 </Tabs>
@@ -378,6 +381,122 @@ function TenantsTab() {
         </div>
 
         <PaginationBar data={data} page={page} onChange={setPage} loading={loading} />
+      </DataState>
+    </div>
+  );
+}
+
+// ── Stripe payments tab (platform charges to tenants) ──────────────────────
+function PaymentsTab() {
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<{ rows: PlatformPaymentRow[]; count: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await billingService.payments({ page, limit: PAGE_LIMIT, status: status || undefined }));
+    } catch (e: any) {
+      setError(e?.message || "Failed to load Stripe payments.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, status]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const totalPages = data ? Math.max(1, Math.ceil(data.count / PAGE_LIMIT)) : 1;
+
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-default-400">
+          Every Stripe invoice charged to a tenant (subscription activations and monthly cycles).
+          Open a tenant for PDF downloads, refunds and subscription actions.
+        </p>
+        <Select
+          aria-label="Payment status"
+          className="w-full sm:w-44"
+          size="sm"
+          selectedKeys={status ? [status] : []}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          items={[
+            { key: "", label: "All statuses" },
+            { key: "paid", label: "Paid" },
+            { key: "open", label: "Open" },
+            { key: "void", label: "Void" },
+            { key: "uncollectible", label: "Uncollectible" },
+          ]}
+        >
+          {(o) => <SelectItem key={o.key}>{o.label}</SelectItem>}
+        </Select>
+      </div>
+
+      <DataState loading={loading} error={error} onRetry={load}>
+        <div className="overflow-x-auto">
+          <Table
+            removeWrapper
+            aria-label="Stripe payments"
+            selectionMode="none"
+            classNames={{
+              th: "bg-transparent text-default-500 text-xs uppercase tracking-wide",
+              td: "py-3",
+            }}
+          >
+            <TableHeader>
+              <TableColumn>INVOICE</TableColumn>
+              <TableColumn>TENANT</TableColumn>
+              <TableColumn>STATUS</TableColumn>
+              <TableColumn className="text-right">AMOUNT</TableColumn>
+              <TableColumn>DATE</TableColumn>
+              <TableColumn>DETAIL</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="No Stripe payments yet.">
+              {(data?.rows || []).map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium text-foreground">
+                    {p.number || p.stripeInvoiceId}
+                  </TableCell>
+                  <TableCell>
+                    <Link to={`/billing/tenants/${p.tenantId}`} className="text-primary hover:underline">
+                      {p.tenantName || p.tenantId}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color={p.status === "paid" ? "success" : p.status === "open" ? "warning" : p.status === "uncollectible" ? "danger" : "default"}
+                    >
+                      {p.status}
+                    </Chip>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {usd(p.status === "paid" ? p.amountPaidCents : p.amountDueCents)}
+                  </TableCell>
+                  <TableCell className="text-default-500">{fmtDate(p.paidAt || p.issuedAt)}</TableCell>
+                  <TableCell className="max-w-64 truncate text-xs text-default-400">
+                    {p.linesSummary || "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center pt-2">
+            <Pagination total={totalPages} page={page} onChange={setPage} size="sm" />
+          </div>
+        )}
       </DataState>
     </div>
   );
