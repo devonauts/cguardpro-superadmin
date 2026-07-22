@@ -28,6 +28,7 @@ import AddonCoursesPage from "./pages/training/AddonCoursesPage";
 import GrantsPage from "./pages/training/GrantsPage";
 import DemoControlPage from "./pages/demo/DemoControlPage";
 import FeedbackList from "./pages/feedback/FeedbackList";
+import LiveSessions from "./pages/cobrowse/LiveSessions";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="sandboxes" element={<SandboxesPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="feedback" element={<FeedbackList />} />
+        <Route path="live-sessions" element={<LiveSessions />} />
         <Route path="phone" element={<PhoneCenter />} />
         <Route path="phone/analytics" element={<CommsAnalyticsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

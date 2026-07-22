@@ -24,6 +24,7 @@ import {
   Server,
   PlayCircle,
   Star,
+  Eye,
 } from "lucide-react";
 import { usePhone } from "@/context/PhoneContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -31,6 +32,7 @@ import { useNotifications } from "@/context/NotificationContext";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/tenants", label: "Tenants", icon: Building2 },
+  { to: "/live-sessions", label: "Co-navegación en vivo", icon: Eye },
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/plans", label: "Planes", icon: Layers },
   { to: "/sandboxes", label: "Sandboxes", icon: Boxes },
