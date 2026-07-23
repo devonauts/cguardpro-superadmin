@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { tenantsService } from "@/services/tenants";
 import type { TenantRow } from "@/types";
-import { Eye, LogOut, Search, Users, Wifi, Loader2 } from "lucide-react";
+import { Eye, LogOut, Search, Users, Wifi, Loader2, Hand, Maximize2, Minimize2 } from "lucide-react";
 import "rrweb/dist/rrweb.min.css";
 
 type OnlineUser = { userId: string; name: string | null; roles: string[] };
@@ -34,6 +34,54 @@ export default function LiveSessions() {
   const startedRef = useRef(false);
   const connectTimerRef = useRef<any>(null);
   const [noSignal, setNoSignal] = useState(false);
+  // Shared control + full-screen mode.
+  const [hasControl, setHasControl] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const targetRef = useRef<Target | null>(null);
+  const hasControlRef = useRef(false);
+  const lastCursorRef = useRef(0);
+
+  // Map a mouse event over the mirror to the tenant viewport, normalized 0..1
+  // against the replayed iframe (so it maps across differing window sizes).
+  const normFromEvent = (e: { clientX: number; clientY: number }): { nx: number; ny: number } | null => {
+    const iframe = replayerRef.current?.iframe as HTMLIFrameElement | undefined;
+    const rect = iframe?.getBoundingClientRect();
+    if (!rect || rect.width < 2 || rect.height < 2) return null;
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return null;
+    return { nx, ny };
+  };
+  const sendControl = (kind: string, extra: Record<string, unknown> = {}) => {
+    const t = targetRef.current;
+    if (!t) return;
+    socket.emit("cobrowse:control", { tenantId: t.tenantId, userId: t.userId, event: { kind, ...extra } });
+  };
+  const onMirrorMove = (e: React.MouseEvent) => {
+    if (status !== "live") return;
+    const now = Date.now();
+    if (now - lastCursorRef.current < 40) return;
+    lastCursorRef.current = now;
+    const n = normFromEvent(e);
+    if (n) sendControl("cursor", n);
+  };
+  const onMirrorClick = (e: React.MouseEvent) => {
+    if (status !== "live" || !hasControlRef.current) return;
+    const n = normFromEvent(e);
+    if (n) sendControl("click", n);
+  };
+  const onMirrorWheel = (e: React.WheelEvent) => {
+    if (status !== "live" || !hasControlRef.current) return;
+    sendControl("scroll", { dx: e.deltaX, dy: e.deltaY });
+  };
+  const toggleControl = () => {
+    const t = targetRef.current;
+    if (!t) return;
+    const next = !hasControlRef.current;
+    hasControlRef.current = next;
+    setHasControl(next);
+    socket.emit("cobrowse:turn", { tenantId: t.tenantId, userId: t.userId, holder: next ? "support" : "tenant" });
+  };
 
   // ── Tenants list (for the picker) ──────────────────────────────────────────
   useEffect(() => {
@@ -109,6 +157,9 @@ export default function LiveSessions() {
     stopWatching();
     const t: Target = { tenantId: tenant.id, tenantName: tenant.name, userId: u.userId, userName: u.name || u.userId };
     setTarget(t);
+    targetRef.current = t;
+    hasControlRef.current = false;
+    setHasControl(false);
     setStatus("connecting");
     setNoSignal(false);
     teardownReplayer();
@@ -129,19 +180,31 @@ export default function LiveSessions() {
   };
 
   const stopWatching = () => {
-    if (target) socket.emit("cobrowse:stop", { tenantId: target.tenantId, userId: target.userId });
+    const t = targetRef.current || target;
+    if (t) {
+      if (hasControlRef.current) socket.emit("cobrowse:turn", { tenantId: t.tenantId, userId: t.userId, holder: "tenant" });
+      socket.emit("cobrowse:stop", { tenantId: t.tenantId, userId: t.userId });
+    }
     if (connectTimerRef.current) { clearTimeout(connectTimerRef.current); connectTimerRef.current = null; }
+    targetRef.current = null;
+    hasControlRef.current = false;
+    setHasControl(false);
+    setFullscreen(false);
     setTarget(null);
     setStatus("idle");
     setNoSignal(false);
     teardownReplayer();
   };
 
-  // Incoming rrweb stream from the tenant's browser (relayed by the backend).
+  // Incoming rrweb stream + turn handoff from the tenant's browser.
   useEffect(() => {
     const onStream = (payload: { events?: any[] }) => { ingest(payload?.events || []); };
+    const onTurn = (p: { holder?: string }) => {
+      if (p?.holder === "tenant") { hasControlRef.current = false; setHasControl(false); }
+    };
     socket.on("cobrowse:stream", onStream);
-    return () => { socket.off("cobrowse:stream", onStream); };
+    socket.on("cobrowse:turn", onTurn);
+    return () => { socket.off("cobrowse:stream", onStream); socket.off("cobrowse:turn", onTurn); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
 
@@ -152,7 +215,7 @@ export default function LiveSessions() {
     <div className="flex flex-col gap-4">
       {/* Top bar (persistent while watching) */}
       {target && (
-        <div className="sticky top-0 z-30 flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2">
+        <div className={`flex items-center justify-between gap-3 border border-amber-500/40 bg-amber-500/10 px-4 py-2 ${fullscreen ? "fixed inset-x-0 top-0 z-[70] rounded-none bg-amber-500/95 backdrop-blur" : "sticky top-0 z-30 rounded-xl"}`}>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
@@ -163,13 +226,36 @@ export default function LiveSessions() {
             <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
               {status === "connecting" ? <><Loader2 className="h-3 w-3 animate-spin" /> conectando…</> : <><Wifi className="h-3 w-3" /> en vivo</>}
             </span>
+            {hasControl && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-600">
+                <Hand className="h-3 w-3" /> Tu turno
+              </span>
+            )}
           </div>
-          <button
-            onClick={stopWatching}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Salir del acceso
-          </button>
+          <div className="flex items-center gap-2">
+            {status === "live" && (
+              <button
+                onClick={toggleControl}
+                title="Tomar/soltar el control para hacer clic en la pantalla del usuario"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white ${hasControl ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 hover:bg-amber-600"}`}
+              >
+                <Hand className="h-3.5 w-3.5" /> {hasControl ? "Soltar control" : "Tomar control"}
+              </button>
+            )}
+            <button
+              onClick={() => setFullscreen((f) => !f)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
+            >
+              {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              {fullscreen ? "Ventana" : "Pantalla completa"}
+            </button>
+            <button
+              onClick={stopWatching}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-black/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Salir del acceso
+            </button>
+          </div>
         </div>
       )}
 
@@ -232,7 +318,7 @@ export default function LiveSessions() {
         </div>
 
         {/* Right: the live mirror */}
-        <div className="min-h-[60vh] overflow-hidden rounded-xl border border-border bg-white">
+        <div className={`overflow-hidden border border-border bg-white ${fullscreen ? "fixed inset-0 z-[60] rounded-none pt-11" : "min-h-[60vh] rounded-xl"}`}>
           {!target ? (
             <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-2 text-muted-foreground">
               <Eye className="h-8 w-8 opacity-40" />
@@ -241,6 +327,16 @@ export default function LiveSessions() {
           ) : (
             <div className="relative h-full w-full">
               <div ref={containerRef} className="cobrowse-stage h-full w-full" />
+              {/* Mouse-capture overlay — relays the superadmin's pointer to the tenant.
+                  Sits above the replayed iframe so we can read the coordinates. */}
+              {status === "live" && (
+                <div
+                  className={`absolute inset-0 z-10 ${hasControl ? "cursor-crosshair" : "cursor-default"}`}
+                  onMouseMove={onMirrorMove}
+                  onClick={onMirrorClick}
+                  onWheel={onMirrorWheel}
+                />
+              )}
               {status !== "live" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/95 px-6 text-center">
                   {noSignal ? (
