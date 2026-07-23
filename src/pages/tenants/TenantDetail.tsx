@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Ban,
   LogIn,
+  X,
   CalendarPlus,
   Download,
   PlayCircle,
@@ -83,10 +84,13 @@ export default function TenantDetail() {
   const [acting, setActing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [accessing, setAccessing] = useState(false);
+  // Full-screen "enter as tenant" mode: the tenant CRM embedded in an iframe with
+  // a floating superadmin bar (the ONLY way out is its "Salir" button).
+  const [accessSession, setAccessSession] = useState<{ url: string; tenantName: string; userName: string } | null>(null);
 
   // Enter the tenant's CRM directly (works even with no tenant user online).
   // superadmin & CRM share the same origin, so we drop the CRM's auth keys into
-  // localStorage (never a token in the URL) and open the CRM in a new tab.
+  // localStorage (never a token in the URL) and load the CRM in a full-screen iframe.
   const doAccess = async () => {
     if (!tenant) return;
     setAccessing(true);
@@ -94,14 +98,18 @@ export default function TenantDetail() {
       const r = await tenantsService.access(tenant.id);
       localStorage.setItem("authToken", r.token);
       localStorage.setItem("tenantId", r.tenantId);
-      // Open on THIS origin (where we just set localStorage) so the CRM tab shares it.
-      window.open(`${window.location.origin}/dashboard`, "_blank", "noopener,noreferrer");
-      toast.success(`Accediendo al CRM de ${r.tenantName} como ${r.userName}`);
+      setAccessSession({ url: `${window.location.origin}/dashboard`, tenantName: r.tenantName, userName: r.userName });
     } catch {
       toast.error("No se pudo acceder al CRM del tenant");
     } finally {
       setAccessing(false);
     }
+  };
+
+  // Leave the mode: tear down the iframe and drop the tenant's auth so no session lingers.
+  const exitAccess = () => {
+    setAccessSession(null);
+    try { localStorage.removeItem("authToken"); localStorage.removeItem("tenantId"); } catch { /* ignore */ }
   };
 
   const load = useCallback(async () => {
@@ -255,6 +263,31 @@ export default function TenantDetail() {
   const suspended = !!tenant?.suspendedAt;
 
   return (
+    <>
+    {accessSession && (
+      <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+        {/* Floating superadmin bar — NOT part of the tenant page. Only exit here. */}
+        <div className="flex items-center justify-between gap-3 bg-indigo-600 px-4 py-2 text-white shadow-lg">
+          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+            </span>
+            <LogIn className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              Estás dentro de <b>{accessSession.tenantName}</b> como {accessSession.userName} · modo soporte
+            </span>
+          </div>
+          <button
+            onClick={exitAccess}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-white/90"
+          >
+            <X className="h-4 w-4" /> Salir del modo
+          </button>
+        </div>
+        <iframe title="CRM del tenant" src={accessSession.url} className="min-h-0 w-full flex-1 border-0 bg-white" />
+      </div>
+    )}
     <div>
       <div className="mb-4">
         <Button
@@ -574,6 +607,7 @@ export default function TenantDetail() {
         onDeleted={() => navigate("/tenants")}
       />
     </div>
+    </>
   );
 }
 
