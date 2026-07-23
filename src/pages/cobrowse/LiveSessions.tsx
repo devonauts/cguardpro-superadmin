@@ -32,6 +32,8 @@ export default function LiveSessions() {
   const replayerRef = useRef<any>(null);
   const bufferRef = useRef<any[]>([]);
   const startedRef = useRef(false);
+  const connectTimerRef = useRef<any>(null);
+  const [noSignal, setNoSignal] = useState(false);
 
   // ── Tenants list (for the picker) ──────────────────────────────────────────
   useEffect(() => {
@@ -91,6 +93,8 @@ export default function LiveSessions() {
           replayerRef.current = replayer;
           replayer.startLive(seed[0]?.timestamp);
           setStatus("live");
+          setNoSignal(false);
+          if (connectTimerRef.current) { clearTimeout(connectTimerRef.current); connectTimerRef.current = null; }
           // eslint-disable-next-line no-console
           console.log("[cobrowse] Replayer booted, going live");
         }
@@ -106,16 +110,30 @@ export default function LiveSessions() {
     const t: Target = { tenantId: tenant.id, tenantName: tenant.name, userId: u.userId, userName: u.name || u.userId };
     setTarget(t);
     setStatus("connecting");
+    setNoSignal(false);
     teardownReplayer();
+    // If no stream boots the mirror within a few seconds, the target isn't
+    // actually transmitting (closed tab / inactive) — surface that instead of
+    // spinning "connecting" forever.
+    if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+    connectTimerRef.current = setTimeout(() => {
+      if (!startedRef.current) setNoSignal(true);
+    }, 8000);
     socket.emit("cobrowse:watch", { tenantId: t.tenantId, userId: t.userId }, (res: any) => {
       if (!res?.ok) { setStatus("idle"); setTarget(null); }
+      else if (typeof res.targets === "number" && res.targets === 0) {
+        // No live socket for this user on the server → definitely not online.
+        setNoSignal(true);
+      }
     });
   };
 
   const stopWatching = () => {
     if (target) socket.emit("cobrowse:stop", { tenantId: target.tenantId, userId: target.userId });
+    if (connectTimerRef.current) { clearTimeout(connectTimerRef.current); connectTimerRef.current = null; }
     setTarget(null);
     setStatus("idle");
+    setNoSignal(false);
     teardownReplayer();
   };
 
@@ -221,7 +239,34 @@ export default function LiveSessions() {
               <p className="text-sm">Elige un tenant y un usuario en línea para ver su sesión.</p>
             </div>
           ) : (
-            <div ref={containerRef} className="cobrowse-stage h-full w-full" />
+            <div className="relative h-full w-full">
+              <div ref={containerRef} className="cobrowse-stage h-full w-full" />
+              {status !== "live" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/95 px-6 text-center">
+                  {noSignal ? (
+                    <>
+                      <Eye className="h-8 w-8 opacity-40" />
+                      <p className="text-sm font-semibold">No se recibe la sesión de {target.userName}.</p>
+                      <p className="max-w-sm text-xs text-muted-foreground">
+                        Es probable que haya cerrado la pestaña del CRM o no esté activo en este momento.
+                        Actualiza la lista de usuarios en línea e intenta de nuevo — el usuario debe tener el CRM abierto.
+                      </p>
+                      <button
+                        onClick={() => watch({ userId: target.userId, name: target.userName, roles: [] })}
+                        className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-400"
+                      >
+                        <Loader2 className="h-3.5 w-3.5" /> Reintentar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                      <p className="text-sm text-muted-foreground">Conectando con la sesión de {target.userName}…</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
