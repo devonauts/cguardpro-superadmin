@@ -20,6 +20,10 @@ export const tenantsService = {
     post<{ success: boolean }>(`/superadmin/tenants/${id}/suspend`, { reason }),
   reactivate: (id: string) =>
     post<{ success: boolean }>(`/superadmin/tenants/${id}/reactivate`),
+  access: (id: string) =>
+    post<{ token: string; tenantId: string; tenantName: string; userId: string; userName: string; frontendUrl: string }>(
+      `/superadmin/tenants/${id}/access`,
+    ),
   extendTrial: (id: string, body: { days?: number; until?: string }) =>
     post<TenantDetail>(`/superadmin/tenants/${id}/extend-trial`, body),
   setBillingStatus: (id: string, status: string) =>

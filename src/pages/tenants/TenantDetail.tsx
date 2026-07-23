@@ -23,6 +23,7 @@ import {
 import {
   ArrowLeft,
   Ban,
+  LogIn,
   CalendarPlus,
   Download,
   PlayCircle,
@@ -81,6 +82,27 @@ export default function TenantDetail() {
   const [trialDays, setTrialDays] = useState(14);
   const [acting, setActing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [accessing, setAccessing] = useState(false);
+
+  // Enter the tenant's CRM directly (works even with no tenant user online).
+  // superadmin & CRM share the same origin, so we drop the CRM's auth keys into
+  // localStorage (never a token in the URL) and open the CRM in a new tab.
+  const doAccess = async () => {
+    if (!tenant) return;
+    setAccessing(true);
+    try {
+      const r = await tenantsService.access(tenant.id);
+      localStorage.setItem("authToken", r.token);
+      localStorage.setItem("tenantId", r.tenantId);
+      // Open on THIS origin (where we just set localStorage) so the CRM tab shares it.
+      window.open(`${window.location.origin}/dashboard`, "_blank", "noopener,noreferrer");
+      toast.success(`Accediendo al CRM de ${r.tenantName} como ${r.userName}`);
+    } catch {
+      toast.error("No se pudo acceder al CRM del tenant");
+    } finally {
+      setAccessing(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -263,6 +285,16 @@ export default function TenantDetail() {
                       {life.label}
                     </Chip>
                   )}
+                  <Button
+                    size="sm"
+                    color="secondary"
+                    variant="solid"
+                    startContent={<LogIn className="h-4 w-4" />}
+                    isLoading={accessing}
+                    onPress={doAccess}
+                  >
+                    Acceder al CRM
+                  </Button>
                   {suspended ? (
                     <Button
                       size="sm"
