@@ -70,25 +70,29 @@ export default function LiveSessions() {
   const ingest = async (events: any[]) => {
     if (!events?.length) return;
     const rr: any = await import("rrweb");
+    const ReplayerClass = rr?.Replayer || rr?.default?.Replayer;
+    // eslint-disable-next-line no-console
+    console.log("[cobrowse] stream in:", events.length, "Replayer:", typeof ReplayerClass);
     for (const ev of events) {
       if (!startedRef.current) {
         bufferRef.current.push(ev);
         // rrweb needs a Meta(4) + FullSnapshot(2) to start. Once we have a full
         // snapshot in the buffer, boot the Replayer in live mode from it.
         const hasFull = bufferRef.current.some((e) => e.type === 2);
-        if (hasFull && containerRef.current) {
+        if (hasFull && containerRef.current && typeof ReplayerClass === "function") {
           const seed = bufferRef.current.slice();
           bufferRef.current = [];
           startedRef.current = true;
-          const replayer = new rr.Replayer(seed, {
+          const replayer = new ReplayerClass(seed, {
             root: containerRef.current,
             liveMode: true,
             mouseTail: { strokeStyle: "#f59e0b" },
-            insertStyleRules: [],
           });
           replayerRef.current = replayer;
           replayer.startLive(seed[0]?.timestamp);
           setStatus("live");
+          // eslint-disable-next-line no-console
+          console.log("[cobrowse] Replayer booted, going live");
         }
       } else {
         try { replayerRef.current?.addEvent(ev); } catch { /* ignore malformed */ }
