@@ -50,6 +50,7 @@ const NAV = [
   { to: "/observability/access", label: "Accesos", icon: KeyRound },
   { to: "/observability/queues", label: "Colas", icon: LayersIcon },
   { to: "/observability/workers", label: "Workers", icon: Server },
+  { to: "/observability/integrity", label: "Integridad horarios", icon: ShieldCheck },
   { to: "/audit", label: "Audit log", icon: ScrollText },
   { to: "/settings/stripe", label: "Stripe", icon: Wallet },
   { to: "/settings/twilio", label: "Twilio", icon: Phone },

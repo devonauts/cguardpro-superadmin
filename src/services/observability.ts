@@ -91,6 +91,24 @@ export interface WorkerSnapshot {
   at: string;
 }
 
+export interface IntegritySample {
+  tenantId?: string | null;
+  label: string;
+  detail: string;
+}
+export interface IntegrityResult {
+  mismatchedStationShifts: number;
+  phantomShiftsOnEndedAssignments: number;
+  total: number;
+  samples: {
+    mismatch: IntegritySample[];
+    phantom: IntegritySample[];
+  };
+  scannedAt: string;
+  pid?: number;
+  timestamp?: string;
+}
+
 export const observabilityService = {
   health: () => get<HealthReport>("/superadmin/observability/health"),
   stats: () => get<{ tables: TableStat[] }>("/superadmin/observability/stats"),
@@ -100,6 +118,7 @@ export const observabilityService = {
   system: () => get<SystemHealth>("/superadmin/observability/system"),
   db: () => get<DbPerformance>("/superadmin/observability/db"),
   jobs: () => get<{ jobs: JobStat[]; pid: number; timestamp: string }>("/superadmin/observability/jobs"),
+  integrity: () => get<IntegrityResult>("/superadmin/observability/integrity"),
   slowQueries: () => get<SlowQueriesResult>("/superadmin/observability/slow-queries"),
   clearSlowQueries: () => del<{ ok: boolean }>("/superadmin/observability/slow-queries"),
   workers: () => get<{ redis: boolean; workers: WorkerSnapshot[]; timestamp: string }>("/superadmin/observability/workers"),
